@@ -52,6 +52,7 @@ Todo se guarda **en tu propio navegador** (`localStorage`). No hay servidor, no 
 | `test-calc.mjs` | Pruebas del motor de cálculo. |
 | `verify-all-combos.mjs` | Pruebas de la interfaz completa. |
 | `verify-persistencia.mjs` | Pruebas de guardado y recarga. |
+| `publicar.ps1` | Publica el sitio en GitHub Pages con un solo comando. |
 
 ## Desarrollo
 
@@ -68,7 +69,14 @@ Las tres suites leen `index.html` directamente, así que **nunca pueden desincro
 
 ## Publicar cambios
 
-El sitio se actualiza solo al empujar a `main`:
+Un solo comando (corre las pruebas, sube y actualiza el sitio):
+
+```powershell
+.\publicar.ps1
+```
+
+La primera vez abre el navegador para que autorices tu cuenta de GitHub; después ya no vuelve a pedirlo.
+Si prefieres hacerlo a mano:
 
 ```bash
 git add -A
