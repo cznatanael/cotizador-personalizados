@@ -14,6 +14,8 @@
 <meta name="apple-mobile-web-app-title" content="Cotizador">
 <meta name="format-detection" content="telephone=no">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111113'/%3E%3Ctext x='32' y='44' font-family='system-ui,sans-serif' font-size='34' font-weight='700' fill='%23fff' text-anchor='middle'%3E%24%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
 <title>Cotizador — Personalizados</title>
 <style>
 /* ============ TOKENS ============ */
@@ -2776,6 +2778,17 @@ function init() {
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();
+
+/* ============ 25. MODO SIN INTERNET ============ */
+/* Registra el service worker para que el cotizador abra aunque no haya senal
+   (sobre todo desde el icono de la pantalla principal). Va despues de init y
+   con guardas: si el navegador no lo soporta, o se abre como archivo local,
+   simplemente no pasa nada y la app funciona igual. */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(e => console.warn('Sin modo offline:', e));
+  });
+}
 </script>
 </body>
 </html>

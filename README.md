@@ -7,7 +7,7 @@ Parte de tus costos reales (material, luz, desgaste de máquina, tu tiempo) y ll
 
 **https://cznatanael.github.io/cotizador-personalizados/**
 
-Funciona en celular, tablet y computadora. Es una sola página: **una vez que carga, sigue funcionando sin internet**.
+Funciona en celular, tablet y computadora. Es una sola página: **una vez que la abres la primera vez, sigue funcionando sin internet** — incluso si la cierras y la vuelves a abrir desde el ícono, sin señal.
 
 ### Para tenerlo como app en el celular
 
@@ -15,6 +15,12 @@ Funciona en celular, tablet y computadora. Es una sola página: **una vez que ca
 - **iPhone (Safari):** botón Compartir → *Agregar a inicio*.
 
 Queda con su ícono y abre a pantalla completa, sin barra de navegador.
+
+### Si no carga
+
+1. **Revisa la dirección: va todo en minúsculas.** `cznatanael.github.io/Cotizador-Personalizados` da error 404; sólo funciona `cotizador-personalizados`.
+2. **Ábrelo en una pestaña de incógnito.** Si ahí sí abre, era caché vieja: en el navegador normal recarga con `Ctrl + F5` (en el celular, borra los datos del sitio).
+3. **Revisa que el atajo apunte a la web.** Si empieza con `file:///C:/...` estás abriendo una copia local, no el sitio.
 
 ## Qué hace
 
@@ -58,6 +64,11 @@ El desglose lista lo que cuesta cada proceso por separado. El PDF del cliente s�
 |---|---|
 | `index.html` | La aplicación completa. Un solo archivo, sin dependencias. |
 | `cotizador.html` | Reenvío al anterior, para accesos directos viejos. |
+| `404.html` | Regresa al cotizador si escribes mal la dirección. |
+| `sw.js` | Service worker: hace que abra aunque no haya internet. |
+| `manifest.webmanifest` | Datos para instalarlo como app (nombre, ícono, colores). |
+| `icon.svg` | Ícono de la app. |
+| `.nojekyll` | Evita que GitHub Pages procese el sitio y altere el código. |
 | `MODELO_COSTEO.md` | El modelo de costos con los números canónicos y ejemplos resueltos. |
 | `GUIA_USO.md` | Manual de uso paso a paso. |
 | `DATOS_MERCADO_MX.md` | Referencias de precios de mercado en México. |

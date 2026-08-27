@@ -1,0 +1,26 @@
+{
+  "name": "Cotizador — Personalizados",
+  "short_name": "Cotizador",
+  "description": "Cotizador para taller de personalizados: sublimación, vinil, láser e impresión 3D.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBFBFD",
+  "theme_color": "#FBFBFD",
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
