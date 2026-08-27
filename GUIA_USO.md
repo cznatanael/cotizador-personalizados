@@ -2,16 +2,22 @@
 
 ## Qué es
 
-`cotizador.html` es tu calculadora de precios: **un solo archivo** que funciona **sin internet** en celular o compu. Calcula cuánto cobrar por pieza considerando material, merma, luz (CFE), desgaste de máquinas, tu sueldo, gastos indirectos y utilidad — con menudeo y mayoreo automáticos.
+Tu calculadora de precios: **una sola página** que funciona **sin internet** en celular o compu. Calcula cuánto cobrar por pieza considerando material, merma, luz (CFE), desgaste de máquinas, tu sueldo, gastos indirectos y utilidad — con menudeo y mayoreo automáticos.
 
-## Cómo pasarla a tu celular (una vez)
+## Cómo abrirla en tu celular (una vez)
 
-1. Mándate `cotizador.html` por WhatsApp (a ti mismo) o cópialo con cable/Drive.
-2. Ábrelo y elige **Chrome** (Android) o Safari (iPhone).
-3. En Chrome: menú ⋮ → **Agregar a pantalla de inicio** → queda como app.
-4. Ya no necesita internet nunca. Tus datos se guardan en ese mismo teléfono.
+Está publicada en internet, así que no tienes que mandarte ningún archivo:
+
+**https://cznatanael.github.io/cotizador-personalizados/**
+
+1. Abre esa dirección en **Chrome** (Android) o **Safari** (iPhone).
+2. Chrome: menú ⋮ → **Agregar a pantalla principal**. Safari: botón Compartir → **Agregar a inicio**.
+3. Queda con su ícono y abre a pantalla completa, como una app.
+4. **Una vez que cargó, ya no necesita internet.** Tus datos se guardan en ese mismo teléfono.
 
 > Los datos (ajustes e historial) viven en el navegador de **ese** dispositivo. Si cotizas desde compu y celular, configura ambos o usa **Exportar / Importar** en Ajustes.
+>
+> También puedes seguir usando el archivo `index.html` de la carpeta, sin internet, exactamente igual que antes.
 
 ---
 
@@ -60,6 +66,32 @@ El filamento se compra por kilo, no por gramo. El vinil por rollo. El papel por 
 Abajo del campo siempre te dice a cuánto sale la unidad real: *"Sale el gramo en $0.4500"*, *"Sale el metro en $90.00"*.
 
 **El modo "por pieza" del láser es para grabar cosas que compras enteras**: lápices, vasos, termos, tablas. Ahí no tiene sentido preguntarte cuántas piezas salen de la hoja, así que ese campo desaparece.
+
+---
+
+## Varios colores o capas (vinil, láser y 3D)
+
+Un diseño rara vez lleva un solo material. Una playera puede ir en negro **y** rojo glitter; una figura 3D en dos filamentos; un llavero láser lleva base y frente encimados. Por eso el bloque **Colores / Capas** deja poner hasta **8**.
+
+1. Escribe el nombre del primer color o capa: *Negro*, *Base MDF*, *Frente acrílico*. El nombre es sólo para ti y para el desglose — no cambia el precio.
+2. Captura sus datos (los cm de manta, los gramos, las piezas por hoja… según la técnica).
+3. Toca **+ Agregar color** para el siguiente.
+4. Si ese material te cuesta distinto (el glitter siempre cuesta más), cámbiale el precio **sólo a ese renglón**. Se marca como ajustado y no toca tu configuración.
+5. Para quitar uno, toca la **×** de su renglón. Siempre queda al menos uno.
+
+**Cada color extra cuesta tiempo, no sólo material.** Cuando hay más de uno aparece un campo para decir cuánto:
+
+| Técnica | Campo | Viene en |
+|---|---|---|
+| Vinil | *Minutos por color extra* (cortar, plotear, encimar y planchar otra vez) | 4 min |
+| Impresión 3D | *Minutos por cambio de color* (pausar, cambiar filamento, purgar) | 3 min |
+| Láser | cada capa trae sus propios **minutos de láser** | — |
+
+El desglose y el PDF listan cada color por su nombre, así que el cliente ve *"Vinil textil · Rojo glitter"* y tú sabes exactamente de dónde salió cada peso.
+
+> **Sublimación no lleva capas** y es a propósito: imprime a todo color de un solo golpe. Si el diseño ocupa más área, lo que sube es el número de **hojas**.
+>
+> **En vinil por rollo todos los colores salen al mismo precio**, porque así lo compraste. Si un color te cuesta distinto, cambia a *"por metro"* y ahí sí puedes darle su precio a cada uno.
 
 ---
 
@@ -134,7 +166,9 @@ Todos los números viven en **Ajustes**; el modelo completo está explicado en `
 
 | Archivo | Qué es |
 |---|---|
-| `cotizador.html` | **LA APP** — este es el que copias al celular |
+| `index.html` | **LA APP** — es la que se publica y la que puedes copiar al celular |
+| `cotizador.html` | Reenvío a `index.html`, para los accesos directos viejos |
+| `README.md` | Presentación del proyecto y dirección web |
 | `MODELO_COSTEO.md` | El modelo de costeo completo: fórmulas, parámetros, ejemplo paso a paso |
 | `DATOS_MERCADO_MX.md` | Investigación de precios reales MX 2026 (fuentes y rangos) |
 | `PENDIENTES.md` | Bitácora de qué se arregló y qué falta |
@@ -152,4 +186,15 @@ node verify-all-combos.mjs
 node verify-persistencia.mjs
 ```
 
-Los tres deben terminar en verde. `test-calc.mjs` lee el motor directo de `cotizador.html`, así que detecta cualquier fórmula que hayas movido.
+Los tres deben terminar en verde. `test-calc.mjs` lee el motor directo de `index.html`, así que detecta cualquier fórmula que hayas movido.
+
+### Para publicar el cambio en internet
+
+```powershell
+cd C:\Users\cznat\ProyectosCopilot\cotizador-personalizados
+git add -A
+git commit -m "lo que cambiaste"
+git push
+```
+
+En ~1 minuto la dirección web ya trae la versión nueva.

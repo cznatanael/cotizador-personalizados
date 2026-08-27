@@ -1,5 +1,60 @@
 # Pendientes — Cotizador
 
+## RESUELTO · Multicolor / capas + publicación en la web
+
+Dos peticiones en una sola frase del usuario: *"necesito el cotizador primero que agregue múltiples colores o capas, después publicarlo en la página de GitHub, si no no lo puedo usar"*.
+
+### 1. Varios colores o capas
+
+Antes el material era **un solo renglón**: un vinil, un filamento, una hoja de MDF. En la vida real un diseño de playera lleva negro + rojo glitter, una figura 3D lleva dos filamentos, y un llavero láser lleva base + frente encimados.
+
+Ahora `inputs.capas` es un arreglo de hasta **8** renglones (`MAX_CAPAS`), cada uno con su nombre y sus propios datos:
+
+| Técnica | Qué se captura por capa | Qué se comparte |
+|---|---|---|
+| Vinil | nombre, cm de manta, $/metro | modo de compra (metro/rollo), costo del blanco |
+| Láser | nombre, costo de hoja, piezas por hoja *(o costo por pieza)*, minutos de láser | modo de compra (hoja/pieza) |
+| Impresión 3D | nombre, gramos, $/kg | tipo de filamento |
+| Sublimación | **no aplica** | — |
+
+**Sublimación se quedó fuera a propósito:** imprime a todo color en un solo transfer. Más área = más *hojas*, que ya existía. Meterle capas sería pedirle al usuario datos que no cambian nada.
+
+**`tipoFilamento` sigue siendo global, no por capa.** Multicolor real casi siempre es el mismo material en distintos colores; ponerlo por renglón agregaba un control por capa a cambio de casi nada.
+
+**Vinil en modo rollo no pide precio por color.** Si compras por rollo, todos los colores salen al mismo precio. El texto de ayuda dice que cambies a "por metro" si un color te cuesta distinto. En `inputsParaMotor` se **omite** el `costoPorMetro` de las capas cuando estás en modo rollo, para que un valor viejo del modo metro no se cuele.
+
+**Tiempo extra.** Cada color/capa adicional cobra minutos: `minutosPorCapaExtra` en vinil (4 min por defecto) y `minutosPorCambioColor` en 3D (3 min). En láser no hay campo global porque cada capa ya trae sus propios `minutosLaser`. Los campos sólo aparecen cuando hay más de una capa.
+
+### El motor no se movió ni un peso
+
+`breakdownVinil`, `breakdownLaser` y `breakdown3D` detectan si viene `inputs.capas`. **Si no viene, arman una capa sintética con los campos de siempre**, así que la aritmética es idéntica a la anterior — hasta las etiquetas del desglose (`Vinil textil`, `Filamento PLA`, `Material (8 pzas por hoja)`). Hay asserts explícitos que comparan capa-única contra la ruta clásica.
+
+Esto importa porque `MODELO_COSTEO.md` tiene números canónicos: taza $110 / $73 / $1,752 y playera vinil $375. Siguen dando exactamente lo mismo.
+
+### 2. Publicado en la web
+
+El usuario no puede usar la app si vive sólo en su computadora. Ahora está en GitHub Pages.
+
+- `cotizador.html` **pasó a llamarse `index.html`** para que la dirección quede limpia (`.../cotizador-personalizados/` en vez de `.../cotizador-personalizados/cotizador.html`).
+- Quedó un `cotizador.html` de reenvío para los accesos directos viejos. Usa `location.replace()` y **no** `<meta http-equiv="refresh">`: con meta refresh, el botón Atrás se cicla entre las dos páginas.
+- Metas de `mobile-web-app-capable` / `apple-mobile-web-app-capable` + ícono SVG embebido para que se pueda **agregar a la pantalla de inicio** del celular y abra sin barra de navegador.
+- Las tres suites ahora leen `index.html`. Se agregó un guardián que falla si alguna vez se cuela un `src`/`href` a `http(s)://`: la app tiene que seguir siendo **un solo archivo que funciona sin internet**.
+
+### Verificación
+
+```powershell
+cd C:\Users\cznat\ProyectosCopilot\cotizador-personalizados
+node test-calc.mjs          # motor: los 38 asserts de siempre + 20 nuevos de capas
+node verify-all-combos.mjs  # UI completa + capas + guardián de "listo para publicar"
+node verify-persistencia.mjs # las capas sobreviven recargar la app y Duplicar
+```
+
+### Lo que NO se hizo (y por qué)
+
+Las capas **no** son líneas de pedido. Siguen siendo *un* producto con varios materiales encima. Cotizar 20 playeras **y** 10 tazas en el mismo pedido sigue en "Ideas para después".
+
+---
+
 ## RESUELTO · 25-ago-2026 (noche) — La app dejó de imponerte su modelo
 
 Tres quejas del usuario, todas el **mismo problema de fondo**: la app asumía cosas en lugar de preguntar.
