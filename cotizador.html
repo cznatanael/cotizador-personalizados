@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cotizador — Personalizados</title>
+<script>
+/* El cotizador ahora vive en index.html (así la dirección web queda limpia).
+   Se usa replace() y no un meta refresh para que el botón Atrás no se cicle. */
+location.replace('index.html' + location.search + location.hash);
+</script>
+<style>body{font:16px/1.5 system-ui,sans-serif;margin:0;display:grid;place-items:center;min-height:100vh;background:#FBFBFD;color:#0A0A0B}a{color:#0A0A0B}</style>
+</head>
+<body>
+<p>El cotizador se movió a <a href="index.html">index.html</a>.</p>
+</body>
+</html>

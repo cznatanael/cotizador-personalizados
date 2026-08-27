@@ -1,0 +1,2493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#FBFBFD">
+<meta name="description" content="Cotizador de productos personalizados: sublimación, vinil textil, corte láser e impresión 3D. Calcula el precio real a partir de tus costos.">
+<meta name="robots" content="index,follow">
+<!-- Para "Agregar a pantalla de inicio": abre sin barra de navegador en iOS y Android. -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cotizador">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111113'/%3E%3Ctext x='32' y='44' font-family='system-ui,sans-serif' font-size='34' font-weight='700' fill='%23fff' text-anchor='middle'%3E%24%3C/text%3E%3C/svg%3E">
+<title>Cotizador — Personalizados</title>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg:#FBFBFD; --surface:#FFFFFF; --surface-2:#F4F4F6; --surface-3:#EDEDF0;
+  --ink:#0A0A0B; --ink-2:#57575F; --ink-3:#8E8E97;
+  --line:#E6E6EA; --line-2:#D6D6DC;
+  --brand:#111113; --brand-fg:#FFFFFF;
+  --pos:#0E7C5A; --pos-bg:#E9F7F1;
+  --warn:#9A6206; --warn-bg:#FDF4E3;
+  --neg:#C2261B; --neg-bg:#FDEDEC;
+  --info:#3538CD; --info-bg:#EEF2FF;
+  --focus:#2563EB;
+  --r-xl:20px; --r-lg:16px; --r-md:12px; --r-sm:9px;
+  --tab-h:58px; --maxw:560px;
+  --sh-1:0 1px 2px rgba(9,9,11,.05);
+  --sh-2:0 8px 24px -8px rgba(9,9,11,.16), 0 2px 6px -2px rgba(9,9,11,.06);
+  --sh-3:0 -6px 24px -10px rgba(9,9,11,.18);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+
+/* ============ RESET / BASE ============ */
+*,*::before,*::after{box-sizing:border-box}
+/* El atributo hidden debe ganarle a cualquier display de autor (.sheet-wrap usa display:flex) */
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:15px; line-height:1.45;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  overscroll-behavior-y:none;
+}
+h1,h2,h3,h4{margin:0; font-weight:600; letter-spacing:-.02em; color:var(--ink)}
+p{margin:0}
+button{font:inherit; color:inherit; background:none; border:0; margin:0; cursor:pointer; -webkit-tap-highlight-color:transparent}
+input,select,textarea{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:6px}
+.ico{display:block; flex:none}
+.num{font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+.wrap{width:100%; max-width:var(--maxw); margin:0 auto; padding:0 18px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ============ TOPBAR ============ */
+.topbar{
+  position:sticky; top:0; z-index:40;
+  background:rgba(251,251,253,.82); backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid transparent; transition:border-color .2s;
+}
+.topbar.is-stuck{border-bottom-color:var(--line)}
+.topbar__in{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:52px}
+.topbar__title{font-size:26px; letter-spacing:-.03em}
+.topbar__act{display:flex; align-items:center; gap:6px}
+.iconbtn{
+  display:grid; place-items:center; width:34px; height:34px; border-radius:999px;
+  color:var(--ink-2); background:var(--surface-2); transition:background .15s,color .15s;
+}
+.iconbtn:hover{background:var(--surface-3); color:var(--ink)}
+
+/* ============ VIEW ============ */
+.view{
+  padding:6px 0 calc(var(--tab-h) + var(--safe-b) + 24px);
+  min-height:60vh;
+}
+.view.has-dock{padding-bottom:calc(var(--tab-h) + var(--safe-b) + 150px)}
+
+/* ============ TABBAR ============ */
+.tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:50;
+  height:calc(var(--tab-h) + var(--safe-b)); padding-bottom:var(--safe-b);
+  display:flex; align-items:stretch;
+  background:rgba(255,255,255,.88); backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-top:1px solid var(--line);
+}
+.tabbar__b{
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  color:var(--ink-3); font-size:10.5px; font-weight:500; letter-spacing:.01em; transition:color .15s;
+}
+.tabbar__b[aria-selected="true"]{color:var(--ink)}
+.tabbar__b:active{opacity:.6}
+
+/* ============ DOCK (precio en vivo) ============ */
+.dock{
+  position:fixed; left:0; right:0; bottom:calc(var(--tab-h) + var(--safe-b)); z-index:45;
+  background:rgba(255,255,255,.94); backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-top:1px solid var(--line); box-shadow:var(--sh-3);
+  padding:11px 0 13px;
+  animation:dockIn .28s cubic-bezier(.22,1,.36,1);
+}
+@keyframes dockIn{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+.dock__row{display:flex; align-items:flex-end; justify-content:space-between; gap:14px}
+.dock__k{font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); margin-bottom:1px}
+.dock__price{font-size:34px; font-weight:650; letter-spacing:-.035em; font-variant-numeric:tabular-nums; line-height:1.05}
+.dock__total{text-align:right}
+.dock__total .v{font-size:17px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.dock__flags{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px}
+.dock__acts{display:flex; gap:9px; margin-top:11px}
+.flash{animation:flash .45s ease}
+@keyframes flash{0%{background:var(--info-bg)}100%{background:transparent}}
+/* ============ BOTONES ============ */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  height:46px; padding:0 18px; border-radius:var(--r-md);
+  font-size:15px; font-weight:560; letter-spacing:-.01em;
+  transition:transform .12s cubic-bezier(.22,1,.36,1), background .15s, opacity .15s;
+  white-space:nowrap;
+}
+.btn:active{transform:scale(.97)}
+.btn--pri{background:var(--brand); color:var(--brand-fg)}
+.btn--pri:hover{background:#2A2A2E}
+.btn--sec{background:var(--surface); color:var(--ink); border:1px solid var(--line-2); box-shadow:var(--sh-1)}
+.btn--sec:hover{background:var(--surface-2)}
+.btn--ghost{background:var(--surface-2); color:var(--ink)}
+.btn--ghost:hover{background:var(--surface-3)}
+.btn--danger{background:var(--neg-bg); color:var(--neg)}
+.btn--wide{flex:1}
+.btn--sm{height:36px; padding:0 13px; font-size:13.5px; border-radius:var(--r-sm)}
+.btn[disabled]{opacity:.4; pointer-events:none}
+.linkbtn{color:var(--focus); font-size:13px; font-weight:560; padding:2px 0}
+.linkbtn:hover{text-decoration:underline}
+
+/* ============ PANEL / SECCIÓN ============ */
+.sec{margin-top:22px}
+.sec__hd{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:0 2px 9px}
+.sec__t{font-size:11.5px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3)}
+.sec__aside{font-size:12.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.panel{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg);
+  box-shadow:var(--sh-1); overflow:hidden;
+}
+.panel--pad{padding:16px}
+.panel__row{display:flex; align-items:center; gap:12px; padding:13px 16px; border-top:1px solid var(--line)}
+.panel__row:first-child{border-top:0}
+.panel__row--btn{width:100%; text-align:left; justify-content:space-between}
+.panel__row--btn:hover{background:var(--surface-2)}
+.panel__lbl{flex:1; min-width:0; font-size:15px}
+.panel__lbl small{display:block; font-size:12.5px; color:var(--ink-3); margin-top:1px; font-weight:400}
+.panel__val{font-size:15px; color:var(--ink-3); font-variant-numeric:tabular-nums; white-space:nowrap}
+
+/* ============ SEGMENTED SCROLL (técnicas) ============ */
+.segs{
+  display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory;
+  padding:3px 18px 3px; margin:0 -18px; -ms-overflow-style:none; scrollbar-width:none;
+}
+.segs::-webkit-scrollbar{display:none}
+.seg{
+  scroll-snap-align:start; flex:none;
+  display:flex; align-items:center; gap:8px; height:44px; padding:0 16px;
+  border-radius:999px; background:var(--surface); border:1px solid var(--line);
+  font-size:14.5px; font-weight:540; color:var(--ink-2); box-shadow:var(--sh-1);
+  transition:background .16s, color .16s, border-color .16s, transform .12s;
+}
+.seg:active{transform:scale(.96)}
+.seg[aria-pressed="true"]{background:var(--brand); border-color:var(--brand); color:var(--brand-fg); box-shadow:var(--sh-2)}
+
+/* ============ CHIPS (productos / cantidades) ============ */
+.chips{display:flex; flex-wrap:wrap; gap:8px}
+.chip{
+  display:inline-flex; align-items:center; height:38px; padding:0 15px;
+  border-radius:999px; background:var(--surface); border:1px solid var(--line);
+  font-size:14px; font-weight:500; color:var(--ink-2); transition:all .15s;
+}
+.chip:active{transform:scale(.96)}
+.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:#fff; font-weight:560}
+.chip--sm{height:33px; padding:0 13px; font-size:13.5px; font-variant-numeric:tabular-nums}
+.chip--add{gap:5px; border-style:dashed; color:var(--ink-3)}
+.chip--add svg{margin-left:-2px}
+
+/* ============ BADGES ============ */
+.badge{
+  display:inline-flex; align-items:center; gap:5px; height:25px; padding:0 10px;
+  border-radius:999px; font-size:12px; font-weight:600; letter-spacing:-.005em; white-space:nowrap;
+}
+.badge--n{background:var(--surface-2); color:var(--ink-2)}
+.badge--p{background:var(--pos-bg); color:var(--pos)}
+.badge--w{background:var(--warn-bg); color:var(--warn)}
+.badge--d{background:var(--neg-bg); color:var(--neg)}
+.badge--i{background:var(--info-bg); color:var(--info)}
+.badge .ico{width:13px;height:13px}
+/* ============ CAMPOS ============ */
+.fields{display:flex; flex-direction:column}
+.field{padding:14px 16px; border-top:1px solid var(--line)}
+.field:first-child{border-top:0}
+.field__top{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px}
+.field__lbl{font-size:13.5px; font-weight:540; color:var(--ink-2); letter-spacing:-.005em}
+.field__ctl{display:flex; align-items:center; gap:8px}
+.inbox{
+  display:flex; align-items:center; flex:1; min-width:0; height:46px;
+  background:var(--surface-2); border:1px solid transparent; border-radius:var(--r-md);
+  padding:0 13px; gap:6px; transition:border-color .15s, background .15s;
+}
+.inbox:focus-within{background:var(--surface); border-color:var(--focus); box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.inbox__fix{font-size:15px; color:var(--ink-3); font-weight:500; flex:none}
+.inbox input, .inbox select{
+  flex:1; min-width:0; width:100%; height:100%;
+  background:none; border:0; outline:none; padding:0;
+  font-size:16px; font-weight:540; letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums; color:var(--ink);
+}
+.inbox select{appearance:none; -webkit-appearance:none; font-weight:540}
+.inbox--sel{position:relative}
+.inbox--sel::after{content:""; position:absolute; right:14px; width:8px; height:8px; border-right:1.7px solid var(--ink-3); border-bottom:1.7px solid var(--ink-3); transform:translateY(-2px) rotate(45deg); pointer-events:none}
+.field__hint{margin-top:6px; font-size:12.5px; color:var(--ink-3); line-height:1.4}
+.field__meta{margin-top:7px; display:flex; align-items:center; gap:9px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-3)}
+.field.is-overridden .inbox{background:var(--info-bg); border-color:rgba(53,56,205,.22)}
+.field.is-overridden .field__lbl{color:var(--info)}
+.derived{margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; background:var(--surface-2); border-radius:var(--r-sm); font-size:13px}
+.derived b{font-weight:600; font-variant-numeric:tabular-nums}
+
+/* ============ CAPAS / COLORES ============ */
+.capa{padding:13px 16px; border-top:1px solid var(--line)}
+.capa:first-child{border-top:0}
+.capa__hd{display:flex; align-items:center; gap:9px; margin-bottom:9px}
+.capa__n{
+  flex:none; display:grid; place-items:center; width:23px; height:23px;
+  border-radius:999px; background:var(--surface-3); color:var(--ink-2);
+  font-size:11.5px; font-weight:650; font-variant-numeric:tabular-nums;
+}
+.capa__name{
+  flex:1; min-width:0; height:36px; padding:0 11px;
+  background:var(--surface-2); border:1px solid transparent; border-radius:var(--r-sm);
+  font:inherit; font-size:14.5px; font-weight:540; color:var(--ink); outline:none;
+  transition:border-color .15s, background .15s;
+}
+.capa__name::placeholder{color:var(--ink-3); font-weight:400}
+.capa__name:focus{background:var(--surface); border-color:var(--focus); box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.capa__del{
+  flex:none; display:grid; place-items:center; width:36px; height:36px;
+  border-radius:var(--r-sm); color:var(--ink-3);
+}
+.capa__del:hover{background:var(--neg-bg); color:var(--neg)}
+.capa__grid{display:flex; flex-wrap:wrap; gap:8px}
+.capa__f{flex:1 1 128px; min-width:0; display:block; cursor:text}
+.capa__f>span{display:block; font-size:11.5px; font-weight:560; color:var(--ink-3); margin-bottom:4px}
+.capa__f .inbox{height:42px; padding:0 11px}
+.capa__f.is-overridden .inbox{background:var(--info-bg); border-color:rgba(53,56,205,.22)}
+.capa__f.is-overridden>span{color:var(--info)}
+.capa__cfg{display:block; margin-top:4px; font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.capa__add{
+  display:flex; align-items:center; justify-content:center; gap:6px; width:100%;
+  padding:13px 16px; border-top:1px dashed var(--line-2);
+  font-size:14px; font-weight:560; color:var(--focus);
+}
+.capa__add:hover{background:var(--surface-2)}
+.capas__hint{margin:8px 2px 0; font-size:12.5px; color:var(--ink-3); line-height:1.45}
+
+/* ============ STEPPER ============ */
+.stepper{display:flex; align-items:center; gap:10px}
+.stepper__b{
+  display:grid; place-items:center; width:46px; height:46px; flex:none;
+  border-radius:var(--r-md); background:var(--surface-2); color:var(--ink);
+  transition:background .15s, transform .12s;
+}
+.stepper__b:hover{background:var(--surface-3)}
+.stepper__b:active{transform:scale(.93)}
+.stepper__b[disabled]{opacity:.35; pointer-events:none}
+.stepper input{
+  flex:1; min-width:0; height:46px; text-align:center; background:var(--surface-2);
+  border:1px solid transparent; border-radius:var(--r-md); outline:none;
+  font-size:19px; font-weight:620; letter-spacing:-.02em; font-variant-numeric:tabular-nums;
+}
+.stepper input:focus{background:var(--surface); border-color:var(--focus); box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+
+/* ============ SLIDER ============ */
+.slider{width:100%; -webkit-appearance:none; appearance:none; height:30px; background:none; outline:none; margin:0}
+.slider::-webkit-slider-runnable-track{height:5px; border-radius:999px; background:var(--surface-3)}
+.slider::-moz-range-track{height:5px; border-radius:999px; background:var(--surface-3)}
+.slider::-webkit-slider-thumb{-webkit-appearance:none; width:26px; height:26px; margin-top:-10.5px; border-radius:50%; background:#fff; border:1px solid var(--line-2); box-shadow:var(--sh-2); cursor:grab}
+.slider::-moz-range-thumb{width:26px; height:26px; border:1px solid var(--line-2); border-radius:50%; background:#fff; box-shadow:var(--sh-2); cursor:grab}
+.bigpct{display:flex; align-items:baseline; gap:7px}
+.bigpct b{font-size:38px; font-weight:640; letter-spacing:-.035em; font-variant-numeric:tabular-nums; line-height:1}
+.bigpct span{font-size:14px; color:var(--ink-3)}
+
+/* ============ SWITCH ============ */
+.sw{position:relative; width:50px; height:30px; flex:none; border-radius:999px; background:var(--surface-3); transition:background .2s}
+.sw::after{content:""; position:absolute; top:2px; left:2px; width:26px; height:26px; border-radius:50%; background:#fff; box-shadow:var(--sh-1),0 1px 3px rgba(0,0,0,.15); transition:transform .22s cubic-bezier(.22,1,.36,1)}
+.sw[aria-checked="true"]{background:var(--pos)}
+.sw[aria-checked="true"]::after{transform:translateX(20px)}
+
+/* ============ BARRA DE MERCADO ============ */
+.mkt__hd{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:14px}
+.mkt__v{font-size:13px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.mkt__bar{position:relative; height:8px; border-radius:999px; background:var(--surface-3); margin:26px 0 10px}
+.mkt__range{position:absolute; top:0; bottom:0; border-radius:999px; background:var(--pos-bg); border:1px solid rgba(14,124,90,.25)}
+.mkt__mark{position:absolute; top:-7px; width:3px; height:22px; border-radius:999px; background:var(--ink); transform:translateX(-1.5px)}
+.mkt__mark::after{
+  content:attr(data-v); position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
+  font-size:11.5px; font-weight:640; white-space:nowrap; color:var(--ink); font-variant-numeric:tabular-nums;
+}
+.mkt__legend{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.mkt__msg{margin-top:12px; font-size:13px; line-height:1.45; color:var(--ink-2)}
+
+/* ============ DOCUMENTO PARA PDF / IMPRESIÓN ============ */
+#printDoc{display:none}
+@media print{
+  /* El margen va DENTRO del documento (padding), no en @page: si el diálogo de
+     impresión está en "Márgenes: Ninguno" el texto se iría al filo y se cortaría. */
+  @page{size:letter; margin:0}
+  html,body{background:#fff !important; margin:0 !important; padding:0 !important}
+  #app,#sheetWrap,#toast{display:none !important}
+  #printDoc{display:block !important; box-sizing:border-box; width:100%; padding:16mm 15mm; color:#111; font-size:12pt; line-height:1.5; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  #printDoc *{box-sizing:border-box; max-width:100%}
+  .pd__hd{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; border-bottom:2px solid #111; padding-bottom:12px}
+  .pd__neg{font-size:19pt; font-weight:700; letter-spacing:-.02em; margin:0; overflow-wrap:anywhere}
+  .pd__tel{font-size:10.5pt; color:#444; margin:3px 0 0}
+  .pd__meta{text-align:right; font-size:10.5pt; color:#444; white-space:nowrap; flex:none}
+  .pd__meta b{color:#111}
+  .pd__t{font-size:14pt; font-weight:700; margin:22px 0 4px}
+  .pd__cli{font-size:11.5pt; color:#333; margin:14px 0 18px}
+  .pd__tbl{width:100%; table-layout:fixed; border-collapse:collapse; margin-top:6px}
+  .pd__tbl th{text-align:left; font-size:9.5pt; text-transform:uppercase; letter-spacing:.06em; color:#555; border-bottom:1px solid #bbb; padding:0 0 7px}
+  .pd__tbl td{padding:12px 0; border-bottom:1px solid #e4e4e4; vertical-align:top}
+  .pd__tbl tbody tr:last-child td{border-bottom:0}
+  .pd__tbl .num{text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums}
+  .pd__tbl col.c-desc{width:46%} .pd__tbl col.c-cant{width:14%} .pd__tbl col.c-pu{width:20%} .pd__tbl col.c-imp{width:20%}
+  .pd__desc b{font-size:12.5pt; overflow-wrap:anywhere}
+  .pd__desc small{display:block; color:#555; font-size:10pt; margin-top:2px; overflow-wrap:anywhere}
+  .pd__tot{display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin-top:16px; padding-top:12px; border-top:2px solid #111}
+  .pd__tot span{font-size:12pt; font-weight:600}
+  .pd__tot b{font-size:21pt; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap}
+  .pd__nota{margin-top:26px; font-size:9.5pt; color:#555; line-height:1.55; border-top:1px solid #e4e4e4; padding-top:12px}
+}
+
+/* ============ BOTTOM SHEET ============ */
+.sheet-wrap{position:fixed; inset:0; z-index:80; display:flex; align-items:flex-end; justify-content:center}
+.sheet-scrim{position:absolute; inset:0; background:rgba(9,9,11,.32); backdrop-filter:blur(2px); animation:fade .22s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{
+  position:relative; width:100%; max-width:var(--maxw);
+  max-height:90vh; display:flex; flex-direction:column;
+  background:var(--surface); border-radius:var(--r-xl) var(--r-xl) 0 0;
+  box-shadow:0 -12px 40px -12px rgba(9,9,11,.3);
+  animation:sheetIn .3s cubic-bezier(.22,1,.36,1);
+  padding-bottom:var(--safe-b);
+}
+@keyframes sheetIn{from{transform:translateY(100%)}to{transform:none}}
+.sheet__grip{width:38px; height:4.5px; border-radius:999px; background:var(--line-2); margin:8px auto 0; flex:none}
+.sheet__hd{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 18px 10px; flex:none}
+.sheet__hd h2{font-size:19px; letter-spacing:-.025em}
+.sheet__bd{overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 18px 6px; flex:1}
+.sheet__ft{display:flex; gap:9px; padding:12px 18px 16px; border-top:1px solid var(--line); flex:none}
+.sheet__ft:empty{display:none}
+
+/* ============ DESGLOSE ============ */
+.bd-group{margin-top:16px}
+.bd-group:first-child{margin-top:4px}
+.bd-group__t{font-size:11.5px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px}
+.bd-l{display:flex; align-items:baseline; justify-content:space-between; gap:14px; padding:7px 0; font-size:14px; border-bottom:1px solid var(--surface-2)}
+.bd-l:last-child{border-bottom:0}
+.bd-l__k{color:var(--ink-2); min-width:0}
+.bd-l__k small{display:block; font-size:12px; color:var(--ink-3)}
+.bd-l__v{font-variant-numeric:tabular-nums; font-weight:540; white-space:nowrap}
+.bd-l--sum{border-top:1px solid var(--line); border-bottom:0; margin-top:4px; padding-top:10px; font-weight:600}
+.bd-l--big{font-size:17px; font-weight:640; letter-spacing:-.02em}
+.bd-l--muted .bd-l__v{color:var(--ink-3); font-weight:500}
+.note{display:flex; gap:9px; padding:12px 13px; border-radius:var(--r-md); font-size:13px; line-height:1.45; margin-top:14px}
+.note--w{background:var(--warn-bg); color:var(--warn)}
+.note--i{background:var(--info-bg); color:var(--info)}
+.note--p{background:var(--pos-bg); color:var(--pos)}
+.note .ico{margin-top:1px; flex:none}
+
+/* ============ HISTORIAL ============ */
+.search{display:flex; align-items:center; gap:9px; height:44px; padding:0 14px; background:var(--surface-2); border-radius:var(--r-md); color:var(--ink-3); border:1px solid transparent}
+.search:focus-within{background:var(--surface); border-color:var(--focus)}
+.search input{flex:1; min-width:0; background:none; border:0; outline:none; font-size:16px; color:var(--ink)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--sh-1); padding:15px 16px; margin-top:10px}
+.card__hd{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
+.card__t{font-size:15.5px; font-weight:600; letter-spacing:-.015em}
+.card__sub{font-size:12.5px; color:var(--ink-3); margin-top:2px}
+.card__p{font-size:19px; font-weight:640; letter-spacing:-.025em; font-variant-numeric:tabular-nums; white-space:nowrap}
+.card__p small{display:block; font-size:12px; font-weight:500; color:var(--ink-3); letter-spacing:0; text-align:right}
+.card__acts{display:flex; gap:7px; margin-top:13px}
+.empty{text-align:center; padding:56px 24px; color:var(--ink-3)}
+.empty .ico{margin:0 auto 14px; width:34px; height:34px; color:var(--line-2)}
+.empty h3{font-size:16px; color:var(--ink-2); margin-bottom:5px}
+.empty p{font-size:13.5px; line-height:1.5; max-width:280px; margin:0 auto}
+
+/* ============ DIRTY BAR (ajustes) ============ */
+.dirtybar{
+  position:fixed; left:0; right:0; bottom:calc(var(--tab-h) + var(--safe-b)); z-index:45;
+  background:rgba(255,255,255,.94); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--line); box-shadow:var(--sh-3); padding:11px 0 13px;
+  animation:dockIn .28s cubic-bezier(.22,1,.36,1);
+}
+.dirtybar__in{display:flex; align-items:center; gap:10px}
+.dirtybar__t{flex:1; font-size:13px; color:var(--ink-2)}
+
+/* ============ TOAST ============ */
+#toast{
+  position:fixed; left:50%; bottom:calc(var(--tab-h) + var(--safe-b) + 18px); z-index:100;
+  transform:translate(-50%,14px); opacity:0; pointer-events:none;
+  max-width:calc(100vw - 36px);
+  background:var(--ink); color:#fff; padding:11px 17px; border-radius:999px;
+  font-size:13.5px; font-weight:520; box-shadow:var(--sh-2);
+  transition:opacity .22s, transform .22s cubic-bezier(.22,1,.36,1);
+}
+#toast.show{opacity:1; transform:translate(-50%,0)}
+#toast.toast--error{background:var(--neg)}
+
+@media (min-width:600px){
+  .view{padding-top:10px}
+  .topbar__title{font-size:28px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important; transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="wrap topbar__in">
+      <h1 class="topbar__title" id="topTitle">Cotizar</h1>
+      <div class="topbar__act" id="topActions"></div>
+    </div>
+  </header>
+
+  <main class="view" id="view"></main>
+
+  <div class="dock" id="dock" hidden></div>
+
+  <nav class="tabbar" id="tabbar" role="tablist"></nav>
+</div>
+
+<div class="sheet-wrap" id="sheetWrap" hidden>
+  <div class="sheet-scrim" data-action="cerrar-sheet"></div>
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet__grip"></div>
+    <header class="sheet__hd">
+      <h2 id="sheetTitle"></h2>
+      <button class="iconbtn" data-action="cerrar-sheet" aria-label="Cerrar" id="sheetClose"></button>
+    </header>
+    <div class="sheet__bd" id="sheetBody"></div>
+    <footer class="sheet__ft" id="sheetFoot"></footer>
+  </section>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- Documento que se imprime / guarda como PDF. Invisible en pantalla. -->
+<div id="printDoc" aria-hidden="true"></div>
+
+<script>
+/* =====================================================================
+   COTIZADOR — PERSONALIZADOS  ·  v2 (pantalla única, precio en vivo)
+   Config default embebida = JSON sección 7 de MODELO_COSTEO.md
+   Datos de mercado embebidos = sección 6 de DATOS_MERCADO_MX.md
+   ===================================================================== */
+
+/* ============ 1. CONFIGURACIÓN DEFAULT (sección 7 MODELO_COSTEO.md) ============ */
+const CONFIG_DEFAULT = {
+  "version": "1.1",
+  "moneda": "MXN",
+  "notasVigencia": "tarifaKwh, sueldoHora, maquinas y catalogoInsumos calibrados con DATOS_MERCADO_MX.md (mercado MX, ago-2026). overheadPct, mermaPct, utilidadMenudeoPct/utilidadMinimaPct, tablaMayoreo, fraccionesTiempo y mantenimiento/horasUsoAnual de maquinas siguen siendo estimaciones razonadas, no de mercado.",
+
+  "negocio": { "nombre": "", "telefono": "", "validezDias": 15 },
+
+  "configGlobal": {
+    "tarifaKwh": 1.10,
+    "tarifaKwhDAC": 6.65,
+    "sueldoHora": 75,
+    "sueldoMensualDeseado": 15000,
+    "horasLaboralesMes": 200,
+    "overheadPct": 0.15,
+    "valorRescatePct": 0.10,
+    "utilidadMenudeoPct": 0.60,
+    "utilidadMinimaPct": 0.15,
+    "comisionVentaOnlinePct": 0.05,
+    "aplicaComisionVentaOnline": false,
+    "mermaPct": {
+      "vinil": 0.08,
+      "sublimacion": 0.10,
+      "laser": 0.05,
+      "impresion3d": 0.07
+    },
+    "tiempoSupervisionImpresion3DMin": 10
+  },
+
+  "fraccionesTiempo": {
+    "sublimacion": { "impresora": 0.20, "plancha": 0.80 },
+    "vinilTextil": { "cricut": 0.30, "plancha": 0.40, "deshierbe": 0.30 },
+    "vinilAdhesivo": { "cricut": 0.30, "aplicacionManual": 0.40, "deshierbe": 0.30 },
+    "laser": { "laser": 1.0 }
+  },
+
+  "maquinas": {
+    "cricutMaker": { "nombre": "Cricut Maker", "costoCompraMxn": 7800, "vidaUtilHoras": 2000, "watts": 70, "mantenimientoAnualMxn": 300, "horasUsoAnual": 300 },
+    "impresoraSublimacion": { "nombre": "Impresora sublimación (EcoTank adaptada)", "costoCompraMxn": 6500, "vidaUtilHoras": 3000, "watts": 20, "mantenimientoAnualMxn": 900, "horasUsoAnual": 400 },
+    "planchaPlana": { "nombre": "Plancha plana 38x38 (playeras)", "costoCompraMxn": 8500, "vidaUtilHoras": 5000, "watts": 2000, "mantenimientoAnualMxn": 200, "horasUsoAnual": 250 },
+    "planchaTaza": { "nombre": "Plancha para taza 11oz", "costoCompraMxn": 3200, "vidaUtilHoras": 5000, "watts": 1500, "mantenimientoAnualMxn": 150, "horasUsoAnual": 300 },
+    "planchaGorra": { "nombre": "Plancha para gorra", "costoCompraMxn": 2800, "vidaUtilHoras": 5000, "watts": 400, "mantenimientoAnualMxn": 150, "horasUsoAnual": 150 },
+    "planchaTumbler": { "nombre": "Plancha para tumbler 20oz", "costoCompraMxn": 3500, "vidaUtilHoras": 5000, "watts": 600, "mantenimientoAnualMxn": 180, "horasUsoAnual": 150 },
+    "planchaTequilero": { "nombre": "Plancha para tequilero", "costoCompraMxn": 2400, "vidaUtilHoras": 5000, "watts": 300, "mantenimientoAnualMxn": 150, "horasUsoAnual": 100 },
+    "falconA10W": { "nombre": "Laser Creality Falcon A 10W", "costoCompraMxn": 10500, "vidaUtilHoras": 3000, "watts": 100, "mantenimientoAnualMxn": 400, "horasUsoAnual": 400 },
+    "bambuP1S": { "nombre": "Impresora 3D Bambu Lab P1S", "costoCompraMxn": 12000, "vidaUtilHoras": 5000, "watts": 300, "mantenimientoAnualMxn": 500, "horasUsoAnual": 900 }
+  },
+
+  "mapeoProductoMaquina": {
+    "taza": { "sublimacion": ["impresoraSublimacion", "planchaTaza"] },
+    "playera": { "sublimacion": ["impresoraSublimacion", "planchaPlana"], "vinilTextil": ["cricutMaker", "planchaPlana"] },
+    "gorra": { "sublimacion": ["impresoraSublimacion", "planchaGorra"], "vinilTextil": ["cricutMaker", "planchaGorra"] },
+    "tumbler": { "sublimacion": ["impresoraSublimacion", "planchaTumbler"] },
+    "tequilero": { "sublimacion": ["impresoraSublimacion", "planchaTequilero"] },
+    "superficieRigida": { "vinilAdhesivo": ["cricutMaker"] },
+    "mdf": { "laser": ["falconA10W"] },
+    "acrilico": { "laser": ["falconA10W"] },
+    "objetoCliente": { "laser": ["falconA10W"] },
+    "objetoImpresion3d": { "impresion3d": ["bambuP1S"] }
+  },
+
+  "catalogoInsumos": {
+    "sublimacion": { "costoPorHojaSublimacion": 3.30, "blancoTazaDefault": 30, "blancoPlayeraDefault": 100, "blancoGorraDefault": 48, "blancoTumblerDefault": 135, "blancoTequileroDefault": 25 },
+    "vinil": { "costoPorMetroVinilTextil": 230, "costoPorMetroVinilAdhesivo": 110, "blancoPlayeraDefault": 110, "blancoGorraDefault": 48 },
+    "laser": { "costoHojaMdf3mmDefault": 110, "medidasHojaMdfCm": "60x90", "costoHojaAcrilicoDefault": 95 },
+    "impresion3d": { "costoPorGramoPLA": 0.32, "costoPorGramoPETG": 0.38 }
+  },
+
+  "tablaMayoreo": [
+    { "rangoMin": 1, "rangoMax": 5, "descuentoPct": 0.00, "etiqueta": "Menudeo" },
+    { "rangoMin": 6, "rangoMax": 11, "descuentoPct": 0.05, "etiqueta": "Mayoreo chico" },
+    { "rangoMin": 12, "rangoMax": 23, "descuentoPct": 0.10, "etiqueta": "Mayoreo medio" },
+    { "rangoMin": 24, "rangoMax": 49, "descuentoPct": 0.15, "etiqueta": "Mayoreo grande" },
+    { "rangoMin": 50, "rangoMax": 99, "descuentoPct": 0.20, "etiqueta": "Mayoreo mayor" },
+    { "rangoMin": 100, "rangoMax": null, "descuentoPct": 0.25, "etiqueta": "Institucional" }
+  ],
+
+  "reglasRedondeo": { "umbralBajo": 100, "multiploBajoUmbralBajo": 0.5, "umbralAlto": 500, "multiploEntreUmbrales": 5, "multiploSobreUmbralAlto": 10 }
+};
+
+/* ============ 2. DATOS DE MERCADO MX (sección 6 DATOS_MERCADO_MX.md) ============ */
+/* Rangos MXN por pieza (menudeo/mayoreo); null = sin dato confiable para esa combinación */
+const MERCADO_MX = {
+  "sublimacion_taza": { menudeo: [120, 199], mayoreo: null, nota: "Taza sublimada" },
+  "sublimacion_playera": { menudeo: [110, 165], mayoreo: [98, 130], nota: "Playera sublimada full print" },
+  "sublimacion_gorra": { menudeo: [100, 150], mayoreo: [50, 90], nota: "Gorra personalizada" },
+  "sublimacion_tumbler": { menudeo: [180, 280], mayoreo: [90, 130], nota: "Tumbler 20oz personalizado" },
+  "sublimacion_tequilero": { menudeo: [40, 80], mayoreo: [20, 30], nota: "Tequilero personalizado" },
+  "vinil_playera": { menudeo: [180, 280], mayoreo: [110, 150], nota: "Playera vinil textil" },
+  "vinil_gorra": { menudeo: [100, 150], mayoreo: [50, 90], nota: "Gorra personalizada" },
+  "vinil_superficieRigida": { menudeo: null, mayoreo: null, nota: null },
+  "laser_mdf": { menudeo: [25, 60], mayoreo: [10, 12], nota: "Llavero MDF láser (mayoreo desde 25 pzas)" },
+  "laser_acrilico": { menudeo: [40, 120], mayoreo: [15, 40], nota: "Topper/letrero láser" },
+  "laser_objetoCliente": { menudeo: null, mayoreo: null, nota: null },
+  "impresion3d_objetoImpresion3d": { porGramo: true, menudeo: [4, 8], mayoreo: [2, 4], nota: "Impresión 3D por gramo" }
+};
+/* ============ 3. MOTOR DE CÁLCULO (funciones puras, verificadas con test-calc.mjs) ============ */
+function costoMaquinaHora(maquina, tarifaKwh, valorRescatePct) {
+  const dep = (maquina.costoCompraMxn - maquina.costoCompraMxn * valorRescatePct) / maquina.vidaUtilHoras;
+  const mant = maquina.mantenimientoAnualMxn / maquina.horasUsoAnual;
+  const luz = (maquina.watts / 1000) * tarifaKwh;
+  return { dep, mant, luz, total: dep + mant + luz };
+}
+
+function redondeoPsicologico(precio, reglas) {
+  if (precio <= 0) return 0;
+  const EPS = 1e-9;
+  let multiplo;
+  if (precio < reglas.umbralBajo) multiplo = reglas.multiploBajoUmbralBajo;
+  else if (precio <= reglas.umbralAlto) multiplo = reglas.multiploEntreUmbrales;
+  else multiplo = reglas.multiploSobreUmbralAlto;
+  const r = Math.ceil((precio - EPS) / multiplo) * multiplo;
+  return Math.round(r * 100) / 100;
+}
+
+function obtenerRangoMayoreo(cantidad, tabla) {
+  for (const r of tabla) {
+    if (cantidad >= r.rangoMin && (r.rangoMax === null || r.rangoMax === undefined || cantidad <= r.rangoMax)) return r;
+  }
+  return tabla[tabla.length - 1];
+}
+
+/* Override de una sola vez: si el usuario escribió un valor válido lo usa,
+   si no cae al valor de configuración. 0 es un override válido. */
+function numOverride(v, fallback) {
+  if (v === undefined || v === null || v === '') return fallback;
+  const n = Number(v);
+  return isNaN(n) ? fallback : n;
+}
+
+function maquinaRequerida(config, id, contexto) {
+  const m = config.maquinas[id];
+  if (!m) throw new Error('No existe la máquina "' + id + '" que pide ' + contexto + '. Revísala en Ajustes.');
+  return m;
+}
+
+function breakdownSublimacion(inputs, config) {
+  const { producto, cantidad, costoBlanco, hojas, minutosProduccion, minutosDisenoPedido } = inputs;
+  const g = config.configGlobal;
+  const merma = g.mermaPct.sublimacion;
+  const costoHojaCfg = config.catalogoInsumos.sublimacion.costoPorHojaSublimacion;
+  const costoHoja = numOverride(inputs.costoHojaOverride, costoHojaCfg);
+  const materialesBase = (costoBlanco || 0) + (hojas || 0) * costoHoja;
+  const costoMaterialesConMerma = materialesBase * (1 + merma);
+
+  // La plancha puede venir explícita (productos propios); si no, se deduce del producto base.
+  const idPlancha = inputs.idPlancha || { taza: 'planchaTaza', playera: 'planchaPlana', gorra: 'planchaGorra', tumbler: 'planchaTumbler', tequilero: 'planchaTequilero' }[producto];
+  const plancha = maquinaRequerida(config, idPlancha, 'el producto "' + producto + '"');
+  const chImpresora = costoMaquinaHora(config.maquinas.impresoraSublimacion, g.tarifaKwh, g.valorRescatePct);
+  const chPlancha = costoMaquinaHora(plancha, g.tarifaKwh, g.valorRescatePct);
+  const fr = config.fraccionesTiempo.sublimacion;
+  const horasImpresora = (minutosProduccion * fr.impresora) / 60;
+  const horasPlancha = (minutosProduccion * fr.plancha) / 60;
+  const costoImpresora = horasImpresora * chImpresora.total;
+  const costoPlancha = horasPlancha * chPlancha.total;
+
+  const tiempoDisenoProrrateado = minutosDisenoPedido / cantidad;
+  const costoProduccion = g.sueldoHora * (minutosProduccion / 60);
+  const costoDiseno = g.sueldoHora * (tiempoDisenoProrrateado / 60);
+
+  return {
+    materiales: {
+      base: materialesBase, mermaPct: merma, total: costoMaterialesConMerma,
+      lineas: [
+        { label: 'Blanco (producto base)', qty: 1, unidad: 'pza', unitario: costoBlanco || 0, total: costoBlanco || 0 },
+        { label: 'Papel de sublimación', qty: hojas || 0, unidad: 'hoja', unitario: costoHoja, total: (hojas || 0) * costoHoja, override: costoHoja !== costoHojaCfg, valorConfig: costoHojaCfg }
+      ]
+    },
+    maquina: {
+      total: costoImpresora + costoPlancha,
+      detalle: [
+        { nombre: config.maquinas.impresoraSublimacion.nombre, horas: horasImpresora, costoHora: chImpresora.total, dep: chImpresora.dep, mant: chImpresora.mant, luz: chImpresora.luz, subtotal: costoImpresora },
+        { nombre: plancha.nombre, horas: horasPlancha, costoHora: chPlancha.total, dep: chPlancha.dep, mant: chPlancha.mant, luz: chPlancha.luz, subtotal: costoPlancha }
+      ]
+    },
+    manoObra: { produccionMin: minutosProduccion, costoProduccion, disenoMinOriginal: minutosDisenoPedido, disenoMinProrrateado: tiempoDisenoProrrateado, costoDiseno, total: costoProduccion + costoDiseno }
+  };
+}
+
+function breakdownVinil(inputs, config) {
+  const { producto, cantidad, costoBlanco, cmVinil, minutosProduccion, minutosDisenoPedido } = inputs;
+  const g = config.configGlobal;
+  const tipoVinil = inputs.tipoVinil || (producto === 'superficieRigida' ? 'adhesivo' : 'textil');
+  const merma = g.mermaPct.vinil;
+  const costoPorMetroCfg = tipoVinil === 'textil' ? config.catalogoInsumos.vinil.costoPorMetroVinilTextil : config.catalogoInsumos.vinil.costoPorMetroVinilAdhesivo;
+  const costoPorMetro = numOverride(inputs.costoPorMetroVinil, costoPorMetroCfg);
+
+  /* Una capa por color. Sin `capas` se usa la ruta de un solo color, con la
+     misma aritmética de siempre (por eso los números del modelo no se mueven). */
+  const capas = (Array.isArray(inputs.capas) && inputs.capas.length)
+    ? inputs.capas
+    : [{ nombre: '', cm: cmVinil || 0, costoPorMetro: costoPorMetro }];
+  const nCapas = capas.length;
+  const lineasVinil = capas.map((c, i) => {
+    const cpm = numOverride(c.costoPorMetro, costoPorMetro);
+    const cm = Number(c.cm) || 0;
+    const nombre = String(c.nombre || '').trim();
+    return {
+      label: 'Vinil ' + tipoVinil + ((nCapas > 1 || nombre) ? ' · ' + (nombre || 'Capa ' + (i + 1)) : ''),
+      qty: cm, unidad: 'cm', unitario: cpm / 100, total: (cm / 100) * cpm,
+      override: cpm !== costoPorMetroCfg, valorConfig: costoPorMetroCfg
+    };
+  });
+  const costoVinilLinea = lineasVinil.reduce((a, l) => a + l.total, 0);
+  const materialesBase = (costoBlanco || 0) + costoVinilLinea;
+  const costoMaterialesConMerma = materialesBase * (1 + merma);
+
+  // Cada color extra es otro corte, otro deshierbe y otro planchado.
+  const minutosExtraCapas = (Number(inputs.minutosPorCapaExtra) || 0) * Math.max(0, nCapas - 1);
+  const minProduccion = (minutosProduccion || 0) + minutosExtraCapas;
+
+  const fr = tipoVinil === 'textil' ? config.fraccionesTiempo.vinilTextil : config.fraccionesTiempo.vinilAdhesivo;
+  const chCricut = costoMaquinaHora(config.maquinas.cricutMaker, g.tarifaKwh, g.valorRescatePct);
+  const horasCricut = (minProduccion * fr.cricut) / 60;
+  const costoCricut = horasCricut * chCricut.total;
+  const detalleMaquina = [{ nombre: config.maquinas.cricutMaker.nombre, horas: horasCricut, costoHora: chCricut.total, dep: chCricut.dep, mant: chCricut.mant, luz: chCricut.luz, subtotal: costoCricut }];
+  let costoPlancha = 0;
+  if (tipoVinil === 'textil') {
+    const idPlancha = inputs.idPlancha || (producto === 'gorra' ? 'planchaGorra' : 'planchaPlana');
+    const plancha = maquinaRequerida(config, idPlancha, 'el producto "' + producto + '"');
+    const chPlancha = costoMaquinaHora(plancha, g.tarifaKwh, g.valorRescatePct);
+    const horasPlancha = (minProduccion * fr.plancha) / 60;
+    costoPlancha = horasPlancha * chPlancha.total;
+    detalleMaquina.push({ nombre: plancha.nombre, horas: horasPlancha, costoHora: chPlancha.total, dep: chPlancha.dep, mant: chPlancha.mant, luz: chPlancha.luz, subtotal: costoPlancha });
+  }
+
+  const tiempoDisenoProrrateado = minutosDisenoPedido / cantidad;
+  const costoProduccion = g.sueldoHora * (minProduccion / 60);
+  const costoDiseno = g.sueldoHora * (tiempoDisenoProrrateado / 60);
+
+  return {
+    tipoVinil,
+    capas: { n: nCapas, minutosExtra: minutosExtraCapas, materialTotal: costoVinilLinea },
+    materiales: {
+      base: materialesBase, mermaPct: merma, total: costoMaterialesConMerma,
+      lineas: [
+        { label: 'Blanco (producto base)', qty: 1, unidad: 'pza', unitario: costoBlanco || 0, total: costoBlanco || 0 }
+      ].concat(lineasVinil)
+    },
+    maquina: { total: costoCricut + costoPlancha, detalle: detalleMaquina },
+    manoObra: { produccionMin: minProduccion, costoProduccion, disenoMinOriginal: minutosDisenoPedido, disenoMinProrrateado: tiempoDisenoProrrateado, costoDiseno, total: costoProduccion + costoDiseno }
+  };
+}
+
+function breakdownLaser(inputs, config) {
+  const { minutosLaser, minutosAcabado, minutosDisenoPedido, cantidad } = inputs;
+  const g = config.configGlobal;
+  const merma = g.mermaPct.laser;
+
+  /* Cada capa es una pieza que se corta y se encima: material y láser propios.
+     Sin `capas` se conserva la ruta clásica de una sola pieza. */
+  const capas = (Array.isArray(inputs.capas) && inputs.capas.length) ? inputs.capas : null;
+  const nCapas = capas ? capas.length : 1;
+  let costoMaterialPorPieza, minLaser, lineas;
+  if (capas) {
+    lineas = capas.map((c, i) => {
+      const cp = Number(c.costoPorPieza) || 0;
+      const nombre = String(c.nombre || '').trim();
+      const base = (nCapas > 1 || nombre) ? 'Material · ' + (nombre || 'Capa ' + (i + 1)) : 'Material';
+      const suf = c.piezasPorHoja ? ' (' + c.piezasPorHoja + ' pzas por hoja)' : ' por pieza';
+      return { label: base + suf, qty: 1, unidad: 'pza', unitario: cp, total: cp, hojaTotal: c.costoHoja };
+    });
+    costoMaterialPorPieza = lineas.reduce((a, l) => a + l.total, 0);
+    minLaser = capas.reduce((a, c) => a + (Number(c.minutosLaser) || 0), 0);
+  } else {
+    costoMaterialPorPieza = inputs.costoMaterialPorPieza || 0;
+    minLaser = minutosLaser || 0;
+    const piezasPorHoja = inputs.piezasPorHoja;
+    lineas = piezasPorHoja
+      ? [{ label: 'Material (' + piezasPorHoja + ' pzas por hoja)', qty: 1, unidad: 'pza', unitario: costoMaterialPorPieza, total: costoMaterialPorPieza, hojaTotal: inputs.costoHojaMaterial }]
+      : [{ label: 'Material por pieza', qty: 1, unidad: 'pza', unitario: costoMaterialPorPieza, total: costoMaterialPorPieza }];
+  }
+
+  const costoMaterialesConMerma = costoMaterialPorPieza * (1 + merma);
+  const chLaser = costoMaquinaHora(config.maquinas.falconA10W, g.tarifaKwh, g.valorRescatePct);
+  const horasLaser = minLaser / 60;
+  const costoMaquinaTotal = horasLaser * chLaser.total;
+  const tiempoDisenoProrrateado = minutosDisenoPedido / cantidad;
+  const costoProduccion = g.sueldoHora * ((minLaser + minutosAcabado) / 60);
+  const costoDiseno = g.sueldoHora * (tiempoDisenoProrrateado / 60);
+  return {
+    capas: { n: nCapas, minutosExtra: 0, materialTotal: costoMaterialPorPieza },
+    materiales: { base: costoMaterialPorPieza, mermaPct: merma, total: costoMaterialesConMerma, lineas },
+    maquina: { total: costoMaquinaTotal, detalle: [{ nombre: config.maquinas.falconA10W.nombre, horas: horasLaser, costoHora: chLaser.total, dep: chLaser.dep, mant: chLaser.mant, luz: chLaser.luz, subtotal: costoMaquinaTotal }] },
+    manoObra: { produccionMin: minLaser + minutosAcabado, costoProduccion, disenoMinOriginal: minutosDisenoPedido, disenoMinProrrateado: tiempoDisenoProrrateado, costoDiseno, total: costoProduccion + costoDiseno }
+  };
+}
+
+function breakdown3D(inputs, config) {
+  const { gramos, tipoFilamento, horasImpresion, minutosPostProceso, minutosDisenoPedido, cantidad } = inputs;
+  const g = config.configGlobal;
+  const merma = g.mermaPct.impresion3d;
+  const costoPorGramoCfg = tipoFilamento === 'PLA' ? config.catalogoInsumos.impresion3d.costoPorGramoPLA : config.catalogoInsumos.impresion3d.costoPorGramoPETG;
+  const costoPorGramo = numOverride(inputs.costoPorGramo, costoPorGramoCfg);
+
+  /* Un renglón por color de filamento. Sin `capas`, un solo color. */
+  const capas = (Array.isArray(inputs.capas) && inputs.capas.length)
+    ? inputs.capas
+    : [{ nombre: '', gramos: gramos || 0, costoPorGramo: costoPorGramo }];
+  const nCapas = capas.length;
+  const lineas = capas.map((c, i) => {
+    const cpg = numOverride(c.costoPorGramo, costoPorGramo);
+    const gr = Number(c.gramos) || 0;
+    const nombre = String(c.nombre || '').trim();
+    return {
+      label: 'Filamento ' + (tipoFilamento || 'PLA') + ((nCapas > 1 || nombre) ? ' · ' + (nombre || 'Color ' + (i + 1)) : ''),
+      qty: gr, unidad: 'g', unitario: cpg, total: gr * cpg,
+      override: cpg !== costoPorGramoCfg, valorConfig: costoPorGramoCfg
+    };
+  });
+  const materialesBase = lineas.reduce((a, l) => a + l.total, 0);
+  const costoMaterialesConMerma = materialesBase * (1 + merma);
+
+  // Cada cambio de color cuesta tiempo (purga, cambio de bobina, supervisión).
+  const minutosExtraCapas = (Number(inputs.minutosPorCambioColor) || 0) * Math.max(0, nCapas - 1);
+
+  const chBambu = costoMaquinaHora(config.maquinas.bambuP1S, g.tarifaKwh, g.valorRescatePct);
+  const costoMaquinaTotal = (horasImpresion || 0) * chBambu.total;
+  const supervisionProrrateada = g.tiempoSupervisionImpresion3DMin / cantidad;
+  const tiempoDisenoProrrateado = minutosDisenoPedido / cantidad;
+  const produccionMin = supervisionProrrateada + minutosPostProceso + minutosExtraCapas;
+  const costoProduccion = g.sueldoHora * (produccionMin / 60);
+  const costoDiseno = g.sueldoHora * (tiempoDisenoProrrateado / 60);
+  return {
+    capas: { n: nCapas, minutosExtra: minutosExtraCapas, materialTotal: materialesBase },
+    materiales: { base: materialesBase, mermaPct: merma, total: costoMaterialesConMerma, lineas },
+    maquina: { total: costoMaquinaTotal, detalle: [{ nombre: config.maquinas.bambuP1S.nombre, horas: horasImpresion || 0, costoHora: chBambu.total, dep: chBambu.dep, mant: chBambu.mant, luz: chBambu.luz, subtotal: costoMaquinaTotal }] },
+    manoObra: { produccionMin, supervisionProrrateada, costoProduccion, disenoMinOriginal: minutosDisenoPedido, disenoMinProrrateado: tiempoDisenoProrrateado, costoDiseno, total: costoProduccion + costoDiseno }
+  };
+}
+
+function calcularBreakdown(tecnica, inputs, config) {
+  if (tecnica === 'sublimacion') return breakdownSublimacion(inputs, config);
+  if (tecnica === 'vinil') return breakdownVinil(inputs, config);
+  if (tecnica === 'laser') return breakdownLaser(inputs, config);
+  if (tecnica === 'impresion3d') return breakdown3D(inputs, config);
+  throw new Error('Técnica desconocida: ' + tecnica);
+}
+
+function calcularCotizacion({ breakdown, cantidad, config, utilidadMenudeoPctOverride, aplicaComisionOverride }) {
+  const g = config.configGlobal;
+  const costoDirecto = breakdown.materiales.total + breakdown.maquina.total + breakdown.manoObra.total;
+  const costoTotal = costoDirecto * (1 + g.overheadPct);
+  const utilidadPct = (utilidadMenudeoPctOverride === undefined || utilidadMenudeoPctOverride === null || isNaN(utilidadMenudeoPctOverride)) ? g.utilidadMenudeoPct : utilidadMenudeoPctOverride;
+  const precioMenudeoBruto = costoTotal * (1 + utilidadPct);
+  const precioMenudeoFinal = redondeoPsicologico(precioMenudeoBruto, config.reglasRedondeo);
+  const rango = obtenerRangoMayoreo(cantidad, config.tablaMayoreo);
+  const descuentoPct = rango ? rango.descuentoPct : 0;
+  const precioConDescuento = precioMenudeoFinal * (1 - descuentoPct);
+  const piso = costoTotal * (1 + g.utilidadMinimaPct);
+  const seAplicoPiso = piso > precioConDescuento + 1e-9;
+  let precioFinalBruto = Math.max(precioConDescuento, piso);
+
+  // Comisión de venta en línea: opt-in. Se repercute para no comerse la utilidad.
+  const aplicaComision = (aplicaComisionOverride === undefined || aplicaComisionOverride === null) ? !!g.aplicaComisionVentaOnline : !!aplicaComisionOverride;
+  const comisionPct = aplicaComision ? (g.comisionVentaOnlinePct || 0) : 0;
+  const precioAntesComision = precioFinalBruto;
+  if (comisionPct > 0 && comisionPct < 1) precioFinalBruto = precioFinalBruto / (1 - comisionPct);
+  const montoComision = precioFinalBruto - precioAntesComision;
+
+  const precioFinal = redondeoPsicologico(precioFinalBruto, config.reglasRedondeo);
+  return {
+    costoDirecto, costoTotal, utilidadPctUsada: utilidadPct, precioMenudeoBruto, precioMenudeoFinal,
+    rango, descuentoPct, precioConDescuento, piso, seAplicoPiso,
+    aplicaComision, comisionPct, montoComision, precioAntesComision,
+    precioFinal, totalPedido: Math.round(precioFinal * cantidad * 100) / 100, breakdown
+  };
+}
+/* ============ 4. ICONOS SVG (sin emojis) ============ */
+const ICONS = {
+  receipt: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M8 15h3M14 11h2M14 15h2"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  sliders: '<path d="M5 7h2M11 7h8M5 12h8M17 12h2M5 17h2M11 17h8"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="17" r="2"/>',
+  chevronRight: '<path d="M9 6l6 6-6 6"/>',
+  chevronDown: '<path d="M6 9l6 6 6-6"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  minus: '<path d="M5 12h14"/>',
+  send: '<path d="M21 3L10.5 13.5M21 3l-6.5 18-4-8-8-4L21 3z"/>',
+  trash: '<path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h8"/>',
+  check: '<path d="M4 12.5l5 5L20 6.5"/>',
+  alert: '<path d="M12 3l9 16H3l9-16zM12 9v5M12 17.5v.01"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>',
+  reset: '<path d="M4 10h7a5 5 0 110 10H7"/><path d="M4 10l4-4M4 10l4 4"/>',
+  bolt: '<path d="M13 3L5 14h6l-1 7 8-11h-6l1-7z"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  save: '<path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  pdf: '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M12 12v5M9.5 14.5L12 17l2.5-2.5"/>'
+};
+function ico(name, size) {
+  const s = size || 20;
+  return '<svg class="ico" viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
+}
+
+/* ============ 5. DATOS DE UI: TÉCNICAS Y PRODUCTOS ============ */
+const TECNICAS = [
+  { id: 'sublimacion', label: 'Sublimación' },
+  { id: 'vinil', label: 'Vinil' },
+  { id: 'laser', label: 'Láser' },
+  { id: 'impresion3d', label: 'Impresión 3D' }
+];
+const PRODUCTOS = {
+  sublimacion: [
+    { id: 'taza', label: 'Taza 11oz' },
+    { id: 'playera', label: 'Playera' },
+    { id: 'gorra', label: 'Gorra' },
+    { id: 'tumbler', label: 'Tumbler 20oz' },
+    { id: 'tequilero', label: 'Tequilero' }
+  ],
+  vinil: [
+    { id: 'playera', label: 'Playera (textil)' },
+    { id: 'gorra', label: 'Gorra (textil)' },
+    { id: 'superficieRigida', label: 'Superficie rígida (adhesivo)' }
+  ],
+  laser: [
+    { id: 'mdf', label: 'MDF 3mm' },
+    { id: 'acrilico', label: 'Acrílico' },
+    { id: 'objetoCliente', label: 'Objeto del cliente' }
+  ],
+  impresion3d: [
+    { id: 'objetoImpresion3d', label: 'Pieza 3D' }
+  ]
+};
+
+/* Planchas disponibles para productos propios de sublimación / vinil textil. */
+const PLANCHAS = [
+  { value: 'planchaPlana', label: 'Plancha plana (playera, tela, superficie plana)' },
+  { value: 'planchaTaza', label: 'Plancha de taza (cilindros chicos: taza, vaso)' },
+  { value: 'planchaTumbler', label: 'Plancha de tumbler (cilindros altos)' },
+  { value: 'planchaGorra', label: 'Plancha de gorra (superficie curva)' },
+  { value: 'planchaTequilero', label: 'Plancha de tequilero (cilindros angostos)' }
+];
+
+/* Catálogo abierto: base (fijo) + productos propios del usuario (localStorage). */
+function productosDe(tecnica) {
+  const propios = state.productos.filter(p => p.tecnica === tecnica);
+  return (PRODUCTOS[tecnica] || []).concat(propios);
+}
+function buscarProducto(tecnica, productoId) { return productosDe(tecnica).find(p => p.id === productoId); }
+function buscarTecnica(tecnicaId) { return TECNICAS.find(t => t.id === tecnicaId); }
+
+/* ============ 6. REFERENCIA DE MERCADO ============ */
+function obtenerReferenciaMercado(tecnica, producto, rangoEtiqueta, gramosOpcional) {
+  const info = MERCADO_MX[tecnica + '_' + producto];
+  if (!info) return null;
+  const usarMayoreo = rangoEtiqueta !== 'Menudeo' && !!info.mayoreo;
+  const base = usarMayoreo ? info.mayoreo : info.menudeo;
+  if (!base) return null;
+  if (info.porGramo) {
+    if (!gramosOpcional) return null;
+    return { rango: [Math.round(base[0] * gramosOpcional * 100) / 100, Math.round(base[1] * gramosOpcional * 100) / 100], esMayoreo: usarMayoreo, nota: info.nota, porGramo: true };
+  }
+  return { rango: base, esMayoreo: usarMayoreo, nota: info.nota, porGramo: false };
+}
+
+/* ============ 7. UTILIDADES ============ */
+const FORMATO_MXN = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatMXN(n) {
+  if (n === null || n === undefined || isNaN(n)) return '$0.00';
+  return FORMATO_MXN.format(n);
+}
+function formatNum(n, dec) {
+  if (n === null || n === undefined || isNaN(n)) return '0';
+  return n.toLocaleString('es-MX', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function formatFecha(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) + ' · ' + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) { return iso; }
+}
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+function clamp(n, min, max) { return Math.min(max, Math.max(min, n)); }
+function generarId() { return 'q_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+function clonarConfig(cfg) { return JSON.parse(JSON.stringify(cfg)); }
+function getPath(obj, path) { return path.split('.').reduce((o, k) => (o === null || o === undefined ? undefined : o[k]), obj); }
+function setPath(obj, path, value) {
+  const keys = path.split('.');
+  let o = obj;
+  for (let i = 0; i < keys.length - 1; i++) { o = o[keys[i]]; }
+  o[keys[keys.length - 1]] = value;
+}
+function mergeConfigProfundo(base, override) {
+  if (override === null || override === undefined) return base;
+  if (Array.isArray(override)) return override;
+  if (typeof override === 'object') {
+    const out = Object.assign({}, base);
+    for (const k of Object.keys(override)) { out[k] = mergeConfigProfundo(base ? base[k] : undefined, override[k]); }
+    return out;
+  }
+  return override;
+}
+function casiIgual(a, b) { return Math.abs(Number(a) - Number(b)) < 1e-9; }
+
+/* ============ 8. PERSISTENCIA (localStorage, prefijo cotizador_) ============ */
+const LS_CONFIG = 'cotizador_config';
+const LS_HISTORIAL = 'cotizador_historial';
+const LS_ULTIMOS = 'cotizador_ultimos';
+const LS_PRODUCTOS = 'cotizador_productos';
+
+function cargarConfigStorage() {
+  try {
+    const raw = localStorage.getItem(LS_CONFIG);
+    if (!raw) return clonarConfig(CONFIG_DEFAULT);
+    return mergeConfigProfundo(clonarConfig(CONFIG_DEFAULT), JSON.parse(raw));
+  } catch (e) {
+    console.warn('No se pudo leer config guardada, se usa default.', e);
+    return clonarConfig(CONFIG_DEFAULT);
+  }
+}
+function guardarConfigStorage(cfg) {
+  try { localStorage.setItem(LS_CONFIG, JSON.stringify(cfg)); return true; } catch (e) { console.warn('No se pudo guardar config', e); return false; }
+}
+function cargarHistorialStorage() {
+  try {
+    const raw = localStorage.getItem(LS_HISTORIAL);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) { return []; }
+}
+function guardarHistorialStorage(hist) {
+  try { localStorage.setItem(LS_HISTORIAL, JSON.stringify(hist)); return true; } catch (e) { console.warn('No se pudo guardar historial', e); return false; }
+}
+function cargarUltimosStorage() {
+  try { return JSON.parse(localStorage.getItem(LS_ULTIMOS) || '{}') || {}; } catch (e) { return {}; }
+}
+function guardarUltimosStorage(o) {
+  try { localStorage.setItem(LS_ULTIMOS, JSON.stringify(o)); return true; } catch (e) { return false; }
+}
+function cargarProductosStorage() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_PRODUCTOS) || '[]');
+    return Array.isArray(arr) ? arr.filter(p => p && p.id && p.tecnica) : [];
+  } catch (e) { return []; }
+}
+function guardarProductosStorage(arr) {
+  try { localStorage.setItem(LS_PRODUCTOS, JSON.stringify(arr)); return true; } catch (e) { console.warn('No se pudo guardar productos', e); return false; }
+}
+
+/* ============ 9. TOAST ============ */
+let toastTimer = null;
+function showToast(msg, tipo) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = tipo === 'error' ? 'show toast--error' : 'show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 2600);
+}
+
+/* ============ 10. ESTADO GLOBAL ============ */
+const state = {
+  config: cargarConfigStorage(),
+  historial: cargarHistorialStorage(),
+  ultimos: cargarUltimosStorage(),
+  productos: cargarProductosStorage(),
+  tabActiva: 'cotizar',
+  cot: {
+    tecnica: 'sublimacion',
+    producto: 'taza',
+    inputs: {},
+    utilidadOverride: null,
+    aplicaComision: null,
+    snapshot: null
+  },
+  configDraft: null,
+  filtroHistorial: ''
+};
+/* ============ 11. CAMPOS POR TÉCNICA (sección 4 del modelo) ============
+   Los campos con `configPath` son overrides de una sola vez: se pueden editar
+   al cotizar sin tocar la configuración guardada.                        */
+function camposFormulario(tecnica, producto, inputs) {
+  inputs = inputs || {};
+  const cat = state.config.catalogoInsumos;
+  const cap = producto.charAt(0).toUpperCase() + producto.slice(1);
+  const prod = buscarProducto(tecnica, producto) || {};
+
+  if (tecnica === 'sublimacion') {
+    const blancoDef = prod.propio ? (prod.costoBlancoDefault || 0) : (cat.sublimacion['blanco' + cap + 'Default'] || 0);
+    const modo = inputs.hojaModo || 'hoja';
+    const cfgHoja = getPath(state.config, 'catalogoInsumos.sublimacion.costoPorHojaSublimacion');
+    const campoPapel = modo === 'paquete'
+      ? [
+        { id: 'costoPaquete', group: 'material', label: 'Precio del paquete', type: 'money', prefix: '$', min: 0, step: 10, value: Math.round(cfgHoja * 100 * 100) / 100 },
+        { id: 'hojasPorPaquete', group: 'material', label: 'Hojas que trae el paquete', type: 'decimal', min: 1, step: 10, value: 100, suffix: 'hojas' }
+      ]
+      : [{ id: 'costoHojaOverride', group: 'material', label: 'Costo por hoja', type: 'money', prefix: '$', min: 0, step: 0.1, suffix: '/hoja', configPath: 'catalogoInsumos.sublimacion.costoPorHojaSublimacion' }];
+    return [
+      { id: 'costoBlanco', group: 'material', label: 'Costo del blanco', type: 'money', prefix: '$', min: 0, step: 1, value: blancoDef },
+      { id: 'hojas', group: 'material', label: 'Hojas de sublimación', type: 'decimal', min: 0, step: 0.1, value: 1, suffix: 'hojas' },
+      { id: 'hojaModo', group: 'material', label: '¿Cómo compras el papel?', type: 'select', value: 'hoja', options: [{ value: 'hoja', label: 'Por hoja' }, { value: 'paquete', label: 'Por paquete' }] }
+    ].concat(campoPapel, [
+      { id: 'minutosProduccion', group: 'tiempo', label: 'Impresión + planchado', type: 'int', min: 0, step: 1, value: 7, suffix: 'min' },
+      { id: 'minutosDisenoPedido', group: 'tiempo', label: 'Diseño (todo el pedido)', type: 'int', min: 0, step: 1, value: 10, suffix: 'min', hint: 'Se prorratea entre las piezas del pedido.' }
+    ]);
+  }
+
+  if (tecnica === 'vinil') {
+    const textil = prod.propio ? prod.soporte !== 'rigido' : producto !== 'superficieRigida';
+    const cfgPath = textil ? 'catalogoInsumos.vinil.costoPorMetroVinilTextil' : 'catalogoInsumos.vinil.costoPorMetroVinilAdhesivo';
+    const cfgMetro = getPath(state.config, cfgPath);
+    const modo = inputs.vinilModo || 'metro';
+    const blancoDef = prod.propio ? (prod.costoBlancoDefault || 0) : (textil ? (cat.vinil['blanco' + cap + 'Default'] || 0) : 0);
+    // El vinil usado y su costo viven en las capas (un renglón por color).
+    const campoVinil = modo === 'rollo'
+      ? [
+        { id: 'costoRollo', group: 'material', label: 'Precio del rollo', type: 'money', prefix: '$', min: 0, step: 50, value: Math.round(cfgMetro * 5 * 100) / 100 },
+        { id: 'metrosRollo', group: 'material', label: 'Metros que trae el rollo', type: 'decimal', min: 0.1, step: 1, value: 5, suffix: 'm' }
+      ]
+      : [];
+    const extra = numCapas(inputs) > 1
+      ? [{ id: 'minutosPorCapaExtra', group: 'tiempo', label: 'Minutos extra por color adicional', type: 'int', min: 0, step: 1, value: 4, suffix: 'min', hint: 'Corte, deshierbe y planchado de cada color después del primero.' }]
+      : [];
+    return [
+      { id: 'costoBlanco', group: 'material', label: textil ? 'Costo del blanco (prenda)' : 'Costo del objeto o superficie', type: 'money', prefix: '$', min: 0, step: 1, value: blancoDef, hint: textil ? '' : 'Déjalo en $0 si el cliente trae el objeto.' },
+      { id: 'vinilModo', group: 'material', label: '¿Cómo compras el vinil?', type: 'select', value: 'metro', options: [{ value: 'metro', label: 'Por metro' }, { value: 'rollo', label: 'Por rollo' }] }
+    ].concat(campoVinil, [
+      { id: 'minutosProduccion', group: 'tiempo', label: textil ? 'Corte + deshierbe + planchado' : 'Corte + deshierbe + aplicación', type: 'int', min: 0, step: 1, value: 12, suffix: 'min' }
+    ], extra, [
+      { id: 'minutosDisenoPedido', group: 'tiempo', label: 'Diseño (todo el pedido)', type: 'int', min: 0, step: 1, value: 8, suffix: 'min', hint: 'Se prorratea entre las piezas del pedido.' }
+    ]);
+  }
+
+  if (tecnica === 'laser') {
+    const esCliente = producto === 'objetoCliente';
+    // Un lápiz o un vaso se compran por pieza, no por hoja. El modo lo decide el producto.
+    const modoDefault = prod.propio ? (prod.materialModo || 'pieza') : (esCliente ? 'pieza' : 'hoja');
+    // El material y los minutos de láser viven en las capas (un renglón por pieza cortada).
+    return [
+      { id: 'materialModo', group: 'material', label: '¿Cómo compras el material?', type: 'select', value: modoDefault, options: [{ value: 'hoja', label: 'Por hoja (me salen varias piezas)' }, { value: 'pieza', label: 'Por pieza (lápiz, vaso, objeto suelto)' }] },
+      { id: 'minutosAcabado', group: 'tiempo', label: 'Armado y acabado', type: 'int', min: 0, step: 1, value: 4, suffix: 'min', hint: numCapas(inputs) > 1 ? 'Incluye el tiempo de pegar y alinear las capas.' : '' },
+      { id: 'minutosDisenoPedido', group: 'tiempo', label: 'Diseño (todo el pedido)', type: 'int', min: 0, step: 1, value: 15, suffix: 'min', hint: 'Se prorratea entre las piezas del pedido.' }
+    ];
+  }
+
+  if (tecnica === 'impresion3d') {
+    // Los gramos y el costo del filamento viven en las capas (un renglón por color).
+    const extra = numCapas(inputs) > 1
+      ? [{ id: 'minutosPorCambioColor', group: 'tiempo', label: 'Minutos extra por cambio de color', type: 'int', min: 0, step: 1, value: 3, suffix: 'min', hint: 'Purga, cambio de bobina y supervisión de cada color después del primero.' }]
+      : [];
+    return [
+      { id: 'tipoFilamento', group: 'material', label: 'Tipo de filamento', type: 'select', value: 'PLA', options: [{ value: 'PLA', label: 'PLA' }, { value: 'PETG', label: 'PETG' }] },
+      { id: 'filamentoModo', group: 'material', label: '¿Cómo compras el filamento?', type: 'select', value: 'kilo', options: [{ value: 'kilo', label: 'Por kilo (rollo)' }, { value: 'gramo', label: 'Por gramo' }] },
+      { id: 'horasImpresion', group: 'tiempo', label: 'Impresión por pieza', type: 'decimal', min: 0, step: 0.1, value: 3.5, suffix: 'h' },
+      { id: 'minutosPostProceso', group: 'tiempo', label: 'Post-proceso por pieza', type: 'int', min: 0, step: 1, value: 8, suffix: 'min' }
+    ].concat(extra, [
+      { id: 'minutosDisenoPedido', group: 'tiempo', label: 'Diseño y laminado (todo el pedido)', type: 'int', min: 0, step: 1, value: 10, suffix: 'min', hint: 'Se prorratea entre las piezas del pedido.' }
+    ]);
+  }
+  return [];
+}
+
+/* ============ 11b. CAPAS / COLORES ============
+   Un renglón por color (vinil, filamento) o por pieza encimada (láser).
+   Vive en `inputs.capas`; la técnica decide qué campos lleva cada renglón. */
+const MAX_CAPAS = 8;
+
+function numCapas(inputs) {
+  return (inputs && Array.isArray(inputs.capas) && inputs.capas.length) ? inputs.capas.length : 1;
+}
+
+function especCapas(tecnica, producto, inputs) {
+  inputs = inputs || {};
+  const prod = buscarProducto(tecnica, producto) || {};
+  const cat = state.config.catalogoInsumos;
+
+  if (tecnica === 'vinil') {
+    const textil = prod.propio ? prod.soporte !== 'rigido' : producto !== 'superficieRigida';
+    const cfgPath = textil ? 'catalogoInsumos.vinil.costoPorMetroVinilTextil' : 'catalogoInsumos.vinil.costoPorMetroVinilAdhesivo';
+    const porRollo = (inputs.vinilModo || 'metro') === 'rollo';
+    const campos = [{ key: 'cm', label: 'Vinil', type: 'decimal', min: 0, step: 1, suffix: 'cm', value: 25 }];
+    if (!porRollo) campos.push({ key: 'costoPorMetro', label: 'Costo del vinil', type: 'money', prefix: '$', suffix: '/m', min: 0, step: 5, configPath: cfgPath });
+    return {
+      titulo: 'Colores / capas', singular: 'color', plural: 'colores',
+      alta: 'Agregar color', placeholder: 'Color (ej. Negro)',
+      ayuda: porRollo
+        ? 'Todos los colores salen del mismo rollo. Cambia a «por metro» si cada color te cuesta distinto.'
+        : 'Un renglón por color. Cada color extra es otro corte, otro deshierbe y otro planchado.',
+      campos
+    };
+  }
+
+  if (tecnica === 'impresion3d') {
+    const fil = inputs.tipoFilamento || 'PLA';
+    const cfgPath = fil === 'PLA' ? 'catalogoInsumos.impresion3d.costoPorGramoPLA' : 'catalogoInsumos.impresion3d.costoPorGramoPETG';
+    const porKilo = (inputs.filamentoModo || 'kilo') === 'kilo';
+    return {
+      titulo: 'Colores de filamento', singular: 'color', plural: 'colores',
+      alta: 'Agregar color', placeholder: 'Color (ej. Rojo)',
+      ayuda: 'Un renglón por color. Si tu impresora purga filamento en cada cambio, agrega un renglón llamado «Purga» con esos gramos.',
+      campos: [
+        { key: 'gramos', label: 'Filamento', type: 'decimal', min: 0, step: 1, suffix: 'g', value: 42 },
+        porKilo
+          ? { key: 'costoPorGramo', label: 'Precio del rollo', type: 'money', prefix: '$', suffix: '/kg', min: 0, step: 10, configPath: cfgPath, factor: 1000 }
+          : { key: 'costoPorGramo', label: 'Costo', type: 'money', prefix: '$', suffix: '/g', min: 0, step: 0.01, configPath: cfgPath }
+      ]
+    };
+  }
+
+  if (tecnica === 'laser') {
+    const esCliente = producto === 'objetoCliente';
+    const cfgPath = producto === 'mdf' ? 'catalogoInsumos.laser.costoHojaMdf3mmDefault'
+      : producto === 'acrilico' ? 'catalogoInsumos.laser.costoHojaAcrilicoDefault' : null;
+    const modoDefault = prod.propio ? (prod.materialModo || 'pieza') : (esCliente ? 'pieza' : 'hoja');
+    const modo = inputs.materialModo || modoDefault;
+    const campos = modo === 'pieza'
+      ? [{ key: 'costoPieza', label: esCliente ? 'Material propio' : 'Costo por pieza', type: 'money', prefix: '$', suffix: '/pza', min: 0, step: 1, value: esCliente ? 0 : (prod.costoBlancoDefault || 0) }]
+      : [
+        { key: 'costoHoja', label: 'Hoja completa', type: 'money', prefix: '$', min: 0, step: 5, configPath: cfgPath, value: cfgPath ? undefined : 0 },
+        { key: 'piezasPorHoja', label: 'Piezas por hoja', type: 'int', min: 1, step: 1, suffix: 'pzas', value: 8 }
+      ];
+    campos.push({ key: 'minutosLaser', label: 'Láser', type: 'int', min: 0, step: 1, suffix: 'min', value: 6 });
+    return {
+      titulo: 'Capas de material', singular: 'capa', plural: 'capas',
+      alta: 'Agregar capa', placeholder: 'Capa (ej. Base MDF)',
+      ayuda: (modo === 'hoja' && producto === 'mdf' ? 'Hoja de ' + cat.laser.medidasHojaMdfCm + ' cm. ' : '') +
+        'Una capa por cada pieza que se corta y se encima. Sube «Armado y acabado» si hay que pegarlas.',
+      campos
+    };
+  }
+  return null; // Sublimación imprime a todo color en un solo transfer: no lleva capas.
+}
+
+function valorDefaultCapa(f) {
+  if (f.value !== undefined) return f.value;
+  if (f.configPath) return getPath(state.config, f.configPath);
+  return 0;
+}
+function capaNueva(esp) {
+  const c = { nombre: '' };
+  for (const f of esp.campos) c[f.key] = valorDefaultCapa(f);
+  return c;
+}
+/* Rellena los huecos sin borrar lo que el usuario ya tenía en otros modos. */
+function capasNormalizadas(esp, previas) {
+  const src = (Array.isArray(previas) && previas.length) ? previas.slice(0, MAX_CAPAS) : [{}];
+  return src.map(p => {
+    const c = Object.assign({}, p || {});
+    c.nombre = typeof c.nombre === 'string' ? c.nombre : '';
+    for (const f of esp.campos) {
+      if (c[f.key] === undefined || c[f.key] === null || c[f.key] === '') c[f.key] = valorDefaultCapa(f);
+    }
+    return c;
+  });
+}
+/* Gramos totales del pedido: el mercado de impresión 3D se cotiza por gramo. */
+function gramosTotales() {
+  const capas = state.cot.inputs.capas;
+  if (Array.isArray(capas) && capas.length) return capas.reduce((a, c) => a + (Number(c.gramos) || 0), 0);
+  return Number(state.cot.inputs.gramos) || 0;
+}
+
+/* Valor por defecto de un campo: `value` explícito o el valor vivo de configuración. */
+function valorDefaultCampo(c) {
+  if (c.value !== undefined) return c.value;
+  if (c.configPath) return getPath(state.config, c.configPath);
+  return c.type === 'select' ? '' : 0;
+}
+
+/* Reconstruye los inputs conservando lo que el usuario ya escribió. */
+function defaultsFormulario(tecnica, producto, previos) {
+  const base = {};
+  const campos = camposFormulario(tecnica, producto, previos || {});
+  for (const c of campos) base[c.id] = valorDefaultCampo(c);
+  if (previos) {
+    for (const c of campos) {
+      if (previos[c.id] !== undefined && previos[c.id] !== null && previos[c.id] !== '') base[c.id] = previos[c.id];
+    }
+  }
+  // Las capas se normalizan con los modos ya resueltos (rollo/metro, hoja/pieza, kilo/gramo).
+  const esp = especCapas(tecnica, producto, base);
+  if (esp) base.capas = capasNormalizadas(esp, previos && previos.capas);
+  return base;
+}
+
+/* Traduce los inputs de la UI a los inputs que espera el motor.
+   Aquí se convierte lo que el usuario COMPRA (paquete, rollo, hoja) a la unidad
+   que necesita el cálculo (hoja, metro, pieza). */
+function inputsParaMotor() {
+  const { tecnica, producto, inputs } = state.cot;
+  const cantidad = Math.max(1, parseInt(state.cot.cantidad, 10) || 1);
+  const prod = buscarProducto(tecnica, producto) || {};
+  const out = Object.assign({}, inputs, { producto, cantidad });
+
+  if (tecnica === 'sublimacion') {
+    if (prod.propio && prod.plancha) out.idPlancha = prod.plancha;
+    if (out.hojaModo === 'paquete') {
+      const hojas = Number(out.hojasPorPaquete) || 1;
+      out.costoHojaOverride = (Number(out.costoPaquete) || 0) / (hojas || 1);
+    }
+  }
+
+  if (tecnica === 'vinil') {
+    if (prod.propio) {
+      out.tipoVinil = prod.soporte === 'rigido' ? 'adhesivo' : 'textil';
+      if (out.tipoVinil === 'textil') out.idPlancha = prod.plancha || 'planchaPlana';
+    }
+    if (out.vinilModo === 'rollo') {
+      const metros = Number(out.metrosRollo) || 1;
+      out.costoPorMetroVinil = (Number(out.costoRollo) || 0) / (metros || 1);
+    }
+    if (Array.isArray(inputs.capas)) {
+      const porRollo = out.vinilModo === 'rollo';
+      out.capas = inputs.capas.map(c => {
+        const o = { nombre: c.nombre, cm: Number(c.cm) || 0 };
+        // Comprando por rollo todos los colores comparten el precio del rollo.
+        if (!porRollo) o.costoPorMetro = c.costoPorMetro;
+        return o;
+      });
+      out.cmVinil = out.capas.reduce((a, c) => a + c.cm, 0);
+    }
+  }
+
+  if (tecnica === 'impresion3d' && Array.isArray(inputs.capas)) {
+    out.capas = inputs.capas.map(c => ({ nombre: c.nombre, gramos: Number(c.gramos) || 0, costoPorGramo: c.costoPorGramo }));
+    out.gramos = out.capas.reduce((a, c) => a + c.gramos, 0);
+  }
+
+  if (tecnica === 'laser') {
+    const modo = out.materialModo || (prod.propio ? (prod.materialModo || 'pieza') : (producto === 'objetoCliente' ? 'pieza' : 'hoja'));
+    if (Array.isArray(inputs.capas)) {
+      out.capas = inputs.capas.map(c => {
+        const pph = modo === 'hoja' ? Math.max(1, Number(c.piezasPorHoja) || 1) : null;
+        const costoHoja = modo === 'hoja' ? (Number(c.costoHoja) || 0) : undefined;
+        return {
+          nombre: c.nombre,
+          costoPorPieza: modo === 'hoja' ? costoHoja / pph : (Number(c.costoPieza) || 0),
+          piezasPorHoja: pph, costoHoja,
+          minutosLaser: Number(c.minutosLaser) || 0
+        };
+      });
+      out.costoMaterialPorPieza = out.capas.reduce((a, c) => a + c.costoPorPieza, 0);
+      out.minutosLaser = out.capas.reduce((a, c) => a + c.minutosLaser, 0);
+      out.piezasPorHoja = modo === 'hoja' ? out.capas[0].piezasPorHoja : null;
+    } else if (modo === 'pieza') {
+      out.costoMaterialPorPieza = Number(out.costoPiezaMaterial) || 0;
+      out.piezasPorHoja = null;
+    } else {
+      const porHoja = Math.max(1, Number(out.piezasPorHoja) || 1);
+      out.costoMaterialPorPieza = (Number(out.costoHojaMaterial) || 0) / porHoja;
+      out.piezasPorHoja = porHoja;
+    }
+  }
+
+  return out;
+}
+
+/* Costo por unidad ya derivado, para mostrarlo en vivo bajo los campos de compra. */
+function derivadoCompra() {
+  const { tecnica, inputs } = state.cot;
+  const m = inputsParaMotor();
+  if (tecnica === 'laser') return { label: 'Material por pieza', valor: m.costoMaterialPorPieza };
+  if (tecnica === 'sublimacion' && inputs.hojaModo === 'paquete') return { label: 'Sale cada hoja en', valor: m.costoHojaOverride };
+  if (tecnica === 'vinil' && inputs.vinilModo === 'rollo') return { label: 'Sale el metro en', valor: m.costoPorMetroVinil };
+  if (tecnica === 'impresion3d' && numCapas(inputs) === 1) return { label: 'Sale el gramo en', valor: Number((inputs.capas || [{}])[0].costoPorGramo) || 0 };
+  return null;
+}
+
+/* Campos que tienen override activo (difieren de la configuración), incluidas las capas. */
+function overridesActivos() {
+  const campos = camposFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+  const lista = campos.filter(c => c.configPath && !casiIgual(state.cot.inputs[c.id], getPath(state.config, c.configPath)));
+  const esp = especCapas(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+  if (esp) {
+    const capas = state.cot.inputs.capas || [];
+    for (const f of esp.campos) {
+      if (!f.configPath) continue;
+      const cfg = getPath(state.config, f.configPath);
+      capas.forEach((c, i) => { if (!casiIgual(c[f.key], cfg)) lista.push({ id: 'capa' + i + '.' + f.key, configPath: f.configPath }); });
+    }
+  }
+  return lista;
+}
+/* ============ 12. RENDER DE CAMPOS ============ */
+function campoHTML(c) {
+  const f = c.factor || 1;
+  const raw = state.cot.inputs[c.id];
+  // `factor` = cuántas unidades base trae la unidad de compra (1 kg = 1000 g).
+  // Se guarda siempre en la unidad base; sólo se MUESTRA en la de compra.
+  const val = f !== 1 && raw !== '' && raw !== undefined && raw !== null ? Math.round(Number(raw) * f * 1e6) / 1e6 : raw;
+  const cfgValBase = c.configPath ? getPath(state.config, c.configPath) : null;
+  const cfgVal = c.configPath && f !== 1 ? Math.round(cfgValBase * f * 1e6) / 1e6 : cfgValBase;
+  const isOv = !!c.configPath && !casiIgual(raw, cfgValBase);
+  let ctl;
+  if (c.type === 'select') {
+    ctl = '<div class="inbox inbox--sel"><select id="f-' + c.id + '" data-field="' + c.id + '" data-type="select">' +
+      c.options.map(o => '<option value="' + escapeHtml(o.value) + '"' + (String(val) === String(o.value) ? ' selected' : '') + '>' + escapeHtml(o.label) + '</option>').join('') +
+      '</select></div>';
+  } else {
+    const mode = c.type === 'int' ? 'numeric' : 'decimal';
+    ctl = '<div class="inbox">' +
+      (c.prefix ? '<span class="inbox__fix">' + escapeHtml(c.prefix) + '</span>' : '') +
+      '<input id="f-' + c.id + '" data-field="' + c.id + '" data-type="' + c.type + '" data-factor="' + f + '" type="number" inputmode="' + mode + '"' +
+      (c.min !== undefined ? ' min="' + c.min + '"' : '') + (c.step ? ' step="' + c.step + '"' : '') +
+      ' value="' + escapeHtml(val) + '">' +
+      (c.suffix ? '<span class="inbox__fix">' + escapeHtml(c.suffix) + '</span>' : '') +
+      '</div>';
+  }
+  let meta = '';
+  if (c.configPath) {
+    meta = '<div class="field__meta"><span>Config: ' + formatMXN(cfgVal) + '</span>' +
+      (isOv ? '<button class="linkbtn" data-action="reset-campo" data-id="' + c.id + '">Restablecer</button><span class="badge badge--i">' + ico('bolt', 13) + 'Solo esta cotización</span>' : '') +
+      '</div>';
+  }
+  return '<div class="field' + (isOv ? ' is-overridden' : '') + '" data-fieldwrap="' + c.id + '">' +
+    '<div class="field__top"><label class="field__lbl" for="f-' + c.id + '">' + escapeHtml(c.label) + '</label></div>' +
+    '<div class="field__ctl">' + ctl + '</div>' +
+    (c.hint ? '<p class="field__hint">' + escapeHtml(c.hint) + '</p>' : '') + meta +
+    '</div>';
+}
+
+function derivadoFila(label, valor) {
+  return '<div class="derived"><span>' + escapeHtml(label) + '</span><b>' + valor + '</b></div>';
+}
+function derivadoLaserHTML() {
+  const filas = [];
+  const d = derivadoCompra();
+  if (d) filas.push(derivadoFila(d.label, d.valor >= 1 ? formatMXN(d.valor) : '$' + formatNum(d.valor, 4)));
+  const bd = state.cot.resultado && state.cot.resultado.breakdown;
+  if (bd && bd.capas && bd.capas.n > 1) {
+    const esp = especCapas(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+    const plural = esp ? esp.plural : 'capas';
+    filas.push(derivadoFila('Material de ' + bd.capas.n + ' ' + plural, formatMXN(bd.capas.materialTotal)));
+    if (bd.capas.minutosExtra > 0) filas.push(derivadoFila('Tiempo extra por ' + plural, '+' + formatNum(bd.capas.minutosExtra, 0) + ' min'));
+  }
+  if (!filas.length) return '';
+  return '<div style="padding:0 16px 14px">' + filas.join('') + '</div>';
+}
+
+/* ---- Capas / colores ---- */
+function campoCapaHTML(f, capa, i) {
+  const fac = f.factor || 1;
+  const raw = capa[f.key];
+  // Igual que en los campos normales: se guarda en unidad base, se muestra en unidad de compra.
+  const val = (fac !== 1 && raw !== '' && raw !== undefined && raw !== null) ? Math.round(Number(raw) * fac * 1e6) / 1e6 : raw;
+  const cfgBase = f.configPath ? getPath(state.config, f.configPath) : null;
+  const isOv = !!f.configPath && !casiIgual(raw, cfgBase);
+  const mode = f.type === 'int' ? 'numeric' : 'decimal';
+  return '<label class="capa__f' + (isOv ? ' is-overridden' : '') + '" data-capawrap="' + i + '-' + f.key + '">' +
+    '<span>' + escapeHtml(f.label) + '</span>' +
+    '<div class="inbox">' +
+    (f.prefix ? '<span class="inbox__fix">' + escapeHtml(f.prefix) + '</span>' : '') +
+    '<input data-capa-field="' + f.key + '" data-i="' + i + '" data-type="' + f.type + '" data-factor="' + fac + '" type="number" inputmode="' + mode + '"' +
+    (f.min !== undefined ? ' min="' + f.min + '"' : '') + (f.step ? ' step="' + f.step + '"' : '') +
+    ' value="' + escapeHtml(val) + '">' +
+    (f.suffix ? '<span class="inbox__fix">' + escapeHtml(f.suffix) + '</span>' : '') +
+    '</div>' +
+    (f.configPath ? '<span class="capa__cfg">Config: ' + formatMXN(cfgBase * fac) + (isOv ? ' · ajustado' : '') + '</span>' : '') +
+    '</label>';
+}
+
+function capasHTML() {
+  const esp = especCapas(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+  if (!esp) return '';
+  const capas = state.cot.inputs.capas || [];
+  const filas = capas.map((c, i) =>
+    '<div class="capa" data-capa="' + i + '">' +
+    '<div class="capa__hd">' +
+    '<span class="capa__n">' + (i + 1) + '</span>' +
+    '<input class="capa__name" type="text" data-capa-nombre="' + i + '" value="' + escapeHtml(c.nombre || '') + '" placeholder="' + escapeHtml(esp.placeholder) + '" aria-label="Nombre de ' + escapeHtml(esp.singular) + ' ' + (i + 1) + '">' +
+    (capas.length > 1 ? '<button class="capa__del" data-action="capa-del" data-i="' + i + '" aria-label="Quitar ' + escapeHtml(esp.singular) + ' ' + (i + 1) + '">' + ico('trash', 17) + '</button>' : '') +
+    '</div>' +
+    '<div class="capa__grid">' + esp.campos.map(f => campoCapaHTML(f, c, i)).join('') + '</div>' +
+    '</div>'
+  ).join('');
+  return '<div class="sec">' +
+    '<div class="sec__hd"><span class="sec__t">' + escapeHtml(esp.titulo) + '</span>' +
+    '<span class="sec__aside" id="capasCount">' + capas.length + ' ' + escapeHtml(capas.length === 1 ? esp.singular : esp.plural) + '</span></div>' +
+    '<div class="panel" id="capasPanel">' + filas +
+    '<div id="derivado">' + derivadoLaserHTML() + '</div>' +
+    (capas.length < MAX_CAPAS ? '<button class="capa__add" data-action="capa-add">' + ico('plus', 16) + escapeHtml(esp.alta) + '</button>' : '') +
+    '</div>' +
+    (esp.ayuda ? '<p class="capas__hint">' + escapeHtml(esp.ayuda) + '</p>' : '') +
+    '</div>';
+}
+
+/* Refresca el aviso de override de una capa sin tocar su input (conserva el foco). */
+function refrescarMetaCapa(i, key) {
+  const esp = especCapas(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+  if (!esp) return;
+  const f = esp.campos.find(x => x.key === key);
+  if (!f || !f.configPath) return;
+  const wrap = document.querySelector('[data-capawrap="' + i + '-' + key + '"]');
+  if (!wrap) return;
+  const cfgBase = getPath(state.config, f.configPath);
+  const isOv = !casiIgual((state.cot.inputs.capas[i] || {})[key], cfgBase);
+  wrap.classList.toggle('is-overridden', isOv);
+  const cfg = wrap.querySelector('.capa__cfg');
+  if (cfg) cfg.textContent = 'Config: ' + formatMXN(cfgBase * (f.factor || 1)) + (isOv ? ' · ajustado' : '');
+}
+
+/* ============ 13. BARRA DE MERCADO ============ */
+function mercadoHTML(res) {
+  const { tecnica, producto } = state.cot;
+  const gramos = tecnica === 'impresion3d' ? gramosTotales() : null;
+  const ref = obtenerReferenciaMercado(tecnica, producto, res.rango ? res.rango.etiqueta : 'Menudeo', gramos);
+  if (!ref) {
+    return '<div class="panel panel--pad"><p class="mkt__msg">' + ico('info', 16) + ' Sin dato de mercado confiable para esta combinación. Guíate por tu costo y utilidad.</p></div>';
+  }
+  const [lo, hi] = ref.rango;
+  const p = res.precioFinal;
+  const min = lo * 0.7, max = hi * 1.3;
+  const pos = v => clamp(((v - min) / (max - min)) * 100, 0, 100);
+  let estado, texto;
+  if (p < lo) { estado = 'w'; texto = 'Estás por debajo del mercado. Hay espacio para subir el precio.'; }
+  else if (p > hi) { estado = 'd'; texto = 'Estás por encima del mercado. Justifica el valor o revisa tus costos.'; }
+  else { estado = 'p'; texto = 'Tu precio está dentro del rango de mercado.'; }
+  return '<div class="panel panel--pad">' +
+    '<div class="mkt__hd"><span class="badge badge--' + estado + '">' + (estado === 'p' ? ico('check', 13) : ico('alert', 13)) + (estado === 'p' ? 'En rango' : estado === 'w' ? 'Bajo' : 'Alto') + '</span>' +
+    '<span class="mkt__v">' + escapeHtml(ref.nota || '') + (ref.esMayoreo ? ' · mayoreo' : '') + '</span></div>' +
+    '<div class="mkt__bar">' +
+    '<div class="mkt__range" style="left:' + pos(lo) + '%; right:' + (100 - pos(hi)) + '%"></div>' +
+    '<div class="mkt__mark" style="left:' + pos(p) + '%" data-v="' + formatMXN(p) + '"></div>' +
+    '</div>' +
+    '<div class="mkt__legend"><span>' + formatMXN(lo) + '</span><span>' + formatMXN(hi) + '</span></div>' +
+    '<p class="mkt__msg">' + texto + (ref.porGramo ? ' Referencia calculada sobre ' + formatNum(gramos, 0) + ' g.' : '') + '</p>' +
+    '</div>';
+}
+
+/* ============ 14. PANTALLA COTIZAR (una sola, precio en vivo) ============ */
+const CANT_RAPIDAS = [1, 6, 12, 24, 50, 100];
+
+function utilidadActual() {
+  return state.cot.utilidadOverride === null || state.cot.utilidadOverride === undefined
+    ? state.config.configGlobal.utilidadMenudeoPct : state.cot.utilidadOverride;
+}
+function comisionActiva() {
+  return state.cot.aplicaComision === null || state.cot.aplicaComision === undefined
+    ? !!state.config.configGlobal.aplicaComisionVentaOnline : !!state.cot.aplicaComision;
+}
+function calcularAhora() {
+  const m = inputsParaMotor();
+  const bd = calcularBreakdown(state.cot.tecnica, m, state.config);
+  return calcularCotizacion({ breakdown: bd, cantidad: m.cantidad, config: state.config, utilidadMenudeoPctOverride: utilidadActual(), aplicaComisionOverride: comisionActiva() });
+}
+
+function renderCotizar() {
+  const { tecnica, producto } = state.cot;
+  const campos = camposFormulario(tecnica, producto, state.cot.inputs);
+  const mats = campos.filter(c => c.group === 'material');
+  const tiempos = campos.filter(c => c.group === 'tiempo');
+  const cant = state.cot.cantidad;
+  const rango = obtenerRangoMayoreo(cant, state.config.tablaMayoreo);
+  const utilPct = Math.round(utilidadActual() * 1000) / 10;
+  const comPct = Math.round((state.config.configGlobal.comisionVentaOnlinePct || 0) * 100);
+  const capasBlock = capasHTML();
+
+  const html =
+    '<div class="wrap">' +
+
+    '<div class="sec" style="margin-top:10px"><div class="segs">' +
+    TECNICAS.map(t => '<button class="seg" data-action="elegir-tecnica" data-id="' + t.id + '" aria-pressed="' + (t.id === tecnica) + '">' + escapeHtml(t.label) + '</button>').join('') +
+    '</div></div>' +
+
+    '<div class="sec"><div class="chips">' +
+    productosDe(tecnica).map(p => '<button class="chip" data-action="elegir-producto" data-id="' + escapeHtml(p.id) + '" aria-pressed="' + (p.id === producto) + '">' + escapeHtml(p.label) + '</button>').join('') +
+    '<button class="chip chip--add" data-action="nuevo-producto">' + ico('plus', 15) + 'Otro producto</button>' +
+    '</div></div>' +
+
+    '<div class="sec">' +
+    '<div class="sec__hd"><span class="sec__t">Cantidad</span><span class="sec__aside" id="tierLbl">' + escapeHtml(rango.etiqueta) + (rango.descuentoPct > 0 ? ' · −' + Math.round(rango.descuentoPct * 100) + '%' : '') + '</span></div>' +
+    '<div class="panel panel--pad">' +
+    '<div class="stepper">' +
+    '<button class="stepper__b" data-action="cant-menos" aria-label="Menos">' + ico('minus', 20) + '</button>' +
+    '<input id="f-cantidad" type="number" inputmode="numeric" min="1" step="1" value="' + cant + '" aria-label="Cantidad de piezas">' +
+    '<button class="stepper__b" data-action="cant-mas" aria-label="Más">' + ico('plus', 20) + '</button>' +
+    '</div>' +
+    '<div class="chips" style="margin-top:12px">' +
+    CANT_RAPIDAS.map(n => '<button class="chip chip--sm" data-action="cant-set" data-n="' + n + '" aria-pressed="' + (n === cant) + '">' + n + '</button>').join('') +
+    '</div></div></div>' +
+
+    '<div class="sec"><div class="sec__hd"><span class="sec__t">Materiales</span></div>' +
+    '<div class="panel"><div class="fields">' + mats.map(campoHTML).join('') + '</div>' +
+    (capasBlock ? '' : '<div id="derivado">' + derivadoLaserHTML() + '</div>') + '</div></div>' +
+
+    capasBlock +
+
+    '<div class="sec"><div class="sec__hd"><span class="sec__t">Tiempos</span></div>' +
+    '<div class="panel"><div class="fields">' + tiempos.map(campoHTML).join('') + '</div></div></div>' +
+
+    '<div class="sec"><div class="sec__hd"><span class="sec__t">Utilidad</span>' +
+    (state.cot.utilidadOverride !== null && state.cot.utilidadOverride !== undefined ? '<button class="linkbtn" data-action="reset-utilidad">Restablecer</button>' : '') +
+    '</div>' +
+    '<div class="panel panel--pad">' +
+    '<div class="bigpct"><b id="utilVal">' + formatNum(utilPct, utilPct % 1 === 0 ? 0 : 1) + '%</b><span>sobre costo total</span></div>' +
+    '<input class="slider" id="utilSlider" type="range" min="0" max="150" step="1" value="' + Math.round(utilPct) + '" aria-label="Porcentaje de utilidad">' +
+    '</div>' +
+    '<div class="panel" style="margin-top:10px"><div class="panel__row">' +
+    '<span class="panel__lbl">Venta en línea<small>Repercute ' + comPct + '% de comisión de plataforma</small></span>' +
+    '<button class="sw" role="switch" data-action="toggle-comision" aria-checked="' + comisionActiva() + '" aria-label="Aplicar comisión de venta en línea"></button>' +
+    '</div></div></div>' +
+
+    '<div class="sec"><div class="sec__hd"><span class="sec__t">Mercado</span></div>' +
+    '<div id="mercadoPanel"></div></div>' +
+
+    '</div>';
+
+  document.getElementById('view').innerHTML = html;
+  document.getElementById('view').classList.add('has-dock');
+  actualizarVivo(true);
+}
+
+/* Recalcula y refresca solo lo que cambia (no re-renderiza los inputs → no pierde foco). */
+function actualizarVivo(sinFlash) {
+  let res;
+  try { res = calcularAhora(); }
+  catch (e) { console.warn(e); return; }
+  state.cot.resultado = res;
+
+  const dock = document.getElementById('dock');
+  const flags = [];
+  if (res.descuentoPct > 0) flags.push('<span class="badge badge--n">' + escapeHtml(res.rango.etiqueta) + ' −' + Math.round(res.descuentoPct * 100) + '%</span>');
+  if (res.seAplicoPiso) flags.push('<span class="badge badge--w">' + ico('alert', 13) + 'Piso de utilidad aplicado</span>');
+  if (res.aplicaComision) flags.push('<span class="badge badge--i">Comisión ' + Math.round(res.comisionPct * 100) + '%</span>');
+  const ovs = overridesActivos();
+  if (ovs.length) flags.push('<span class="badge badge--i">' + ico('bolt', 13) + ovs.length + ' costo' + (ovs.length > 1 ? 's' : '') + ' ajustado' + (ovs.length > 1 ? 's' : '') + '</span>');
+
+  dock.hidden = false;
+  dock.innerHTML = '<div class="wrap">' +
+    '<div class="dock__row">' +
+    '<div><div class="dock__k">Precio por pieza</div><div class="dock__price" id="dockUnit">' + formatMXN(res.precioFinal) + '</div></div>' +
+    '<div class="dock__total"><div class="dock__k">Total ' + state.cot.cantidad + ' pza' + (state.cot.cantidad > 1 ? 's' : '') + '</div><div class="v" id="dockTotal">' + formatMXN(res.totalPedido) + '</div></div>' +
+    '</div>' +
+    (flags.length ? '<div class="dock__flags">' + flags.join('') + '</div>' : '') +
+    '<div class="dock__acts">' +
+    '<button class="btn btn--sec btn--wide" data-action="ver-desglose">' + ico('layers', 18) + 'Desglose</button>' +
+    '<button class="btn btn--sec" data-action="pdf-cot" aria-label="Descargar PDF" title="Descargar PDF">' + ico('pdf', 18) + '</button>' +
+    '<button class="btn btn--pri btn--wide" data-action="guardar-cot">' + ico('save', 18) + 'Guardar</button>' +
+    '</div></div>';
+  if (!sinFlash) { const u = document.getElementById('dockUnit'); if (u) { u.classList.remove('flash'); void u.offsetWidth; u.classList.add('flash'); } }
+
+  const mp = document.getElementById('mercadoPanel');
+  if (mp) mp.innerHTML = mercadoHTML(res);
+  const der = document.getElementById('derivado');
+  if (der) der.innerHTML = derivadoLaserHTML();
+  const tier = document.getElementById('tierLbl');
+  if (tier) tier.textContent = res.rango.etiqueta + (res.descuentoPct > 0 ? ' · −' + Math.round(res.descuentoPct * 100) + '%' : '');
+}
+
+/* Refresca la meta de override de un campo sin tocar su input (conserva el foco). */
+function refrescarMetaCampo(id) {
+  const campos = camposFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+  const c = campos.find(x => x.id === id);
+  if (!c || !c.configPath) return;
+  const wrap = document.querySelector('[data-fieldwrap="' + id + '"]');
+  if (!wrap) return;
+  const cfgVal = getPath(state.config, c.configPath);
+  const f = c.factor || 1;
+  const isOv = !casiIgual(state.cot.inputs[id], cfgVal);
+  wrap.classList.toggle('is-overridden', isOv);
+  let meta = wrap.querySelector('.field__meta');
+  if (!meta) { meta = document.createElement('div'); meta.className = 'field__meta'; wrap.appendChild(meta); }
+  meta.innerHTML = '<span>Config: ' + formatMXN(cfgVal * f) + (f !== 1 ? ' /kg' : '') + '</span>' +
+    (isOv ? '<button class="linkbtn" data-action="reset-campo" data-id="' + id + '">Restablecer</button><span class="badge badge--i">' + ico('bolt', 13) + 'Solo esta cotización</span>' : '');
+}
+/* ============ 15. SHEET GENÉRICO ============ */
+let sheetState = { onClose: null };
+function abrirSheet(titulo, bodyHTML, footHTML, onClose) {
+  document.getElementById('sheetTitle').textContent = titulo;
+  document.getElementById('sheetBody').innerHTML = bodyHTML;
+  document.getElementById('sheetFoot').innerHTML = footHTML || '';
+  document.getElementById('sheetClose').innerHTML = ico('close', 17);
+  document.getElementById('sheetWrap').hidden = false;
+  document.body.style.overflow = 'hidden';
+  sheetState.onClose = onClose || null;
+}
+function cerrarSheet() {
+  document.getElementById('sheetWrap').hidden = true;
+  document.body.style.overflow = '';
+  const cb = sheetState.onClose; sheetState.onClose = null;
+  if (cb) cb();
+}
+function confirmar(titulo, mensaje, textoOk, peligro) {
+  return new Promise(resolve => {
+    let decidido = false;
+    abrirSheet(titulo,
+      '<p style="font-size:14.5px;line-height:1.5;color:var(--ink-2);padding:2px 0 14px">' + escapeHtml(mensaje) + '</p>',
+      '<button class="btn btn--ghost btn--wide" data-action="conf-no">Cancelar</button>' +
+      '<button class="btn ' + (peligro ? 'btn--danger' : 'btn--pri') + ' btn--wide" data-action="conf-si">' + escapeHtml(textoOk || 'Aceptar') + '</button>',
+      () => { if (!decidido) resolve(false); });
+    const ft = document.getElementById('sheetFoot');
+    ft.querySelector('[data-action="conf-no"]').onclick = () => { decidido = true; cerrarSheet(); resolve(false); };
+    ft.querySelector('[data-action="conf-si"]').onclick = () => { decidido = true; cerrarSheet(); resolve(true); };
+  });
+}
+
+/* ============ 16b. PRODUCTOS PROPIOS (catálogo abierto) ============ */
+function sheetNuevoProducto() {
+  const tec = state.cot.tecnica;
+  const campoNombre = '<div class="field"><div class="field__top"><label class="field__lbl" for="np-nombre">¿Qué vas a personalizar?</label></div>' +
+    '<div class="field__ctl"><div class="inbox"><input id="np-nombre" type="text" placeholder="Lápiz, vaso, termo, llavero…" autocomplete="off"></div></div></div>';
+
+  let extra = '';
+  if (tec === 'sublimacion') {
+    extra = '<div class="field"><div class="field__top"><label class="field__lbl" for="np-plancha">¿Con qué plancha lo haces?</label></div>' +
+      '<div class="field__ctl"><div class="inbox inbox--sel"><select id="np-plancha">' +
+      PLANCHAS.map(p => '<option value="' + p.value + '">' + escapeHtml(p.label) + '</option>').join('') +
+      '</select></div></div></div>' +
+      '<div class="field"><div class="field__top"><label class="field__lbl" for="np-blanco">¿Cuánto te cuesta el blanco?</label></div>' +
+      '<div class="field__ctl"><div class="inbox"><span class="inbox__fix">$</span><input id="np-blanco" type="number" inputmode="decimal" min="0" step="1" value="0"></div></div>' +
+      '<p class="field__hint">Lo puedes cambiar en cada cotización.</p></div>';
+  } else if (tec === 'vinil') {
+    extra = '<div class="field"><div class="field__top"><label class="field__lbl" for="np-soporte">¿Sobre qué lo aplicas?</label></div>' +
+      '<div class="field__ctl"><div class="inbox inbox--sel"><select id="np-soporte">' +
+      '<option value="textil">Tela (vinil textil, lleva plancha)</option>' +
+      '<option value="rigido">Superficie rígida (vinil adhesivo)</option>' +
+      '</select></div></div></div>' +
+      '<div class="field" id="np-planchaWrap"><div class="field__top"><label class="field__lbl" for="np-plancha">¿Con qué plancha?</label></div>' +
+      '<div class="field__ctl"><div class="inbox inbox--sel"><select id="np-plancha">' +
+      PLANCHAS.map(p => '<option value="' + p.value + '">' + escapeHtml(p.label) + '</option>').join('') +
+      '</select></div></div></div>' +
+      '<div class="field"><div class="field__top"><label class="field__lbl" for="np-blanco">¿Cuánto te cuesta el blanco?</label></div>' +
+      '<div class="field__ctl"><div class="inbox"><span class="inbox__fix">$</span><input id="np-blanco" type="number" inputmode="decimal" min="0" step="1" value="0"></div></div></div>';
+  } else if (tec === 'laser') {
+    extra = '<div class="field"><div class="field__top"><label class="field__lbl" for="np-modo">¿Cómo compras el material?</label></div>' +
+      '<div class="field__ctl"><div class="inbox inbox--sel"><select id="np-modo">' +
+      '<option value="pieza">Por pieza (lápiz, vaso, objeto suelto)</option>' +
+      '<option value="hoja">Por hoja (me salen varias piezas)</option>' +
+      '</select></div></div></div>' +
+      '<div class="field"><div class="field__top"><label class="field__lbl" for="np-blanco">¿Cuánto te cuesta cada pieza?</label></div>' +
+      '<div class="field__ctl"><div class="inbox"><span class="inbox__fix">$</span><input id="np-blanco" type="number" inputmode="decimal" min="0" step="1" value="0"></div></div>' +
+      '<p class="field__hint">Déjalo en $0 si el cliente trae el objeto.</p></div>';
+  }
+
+  abrirSheet('Nuevo producto',
+    '<p class="field__hint" style="padding:2px 0 10px">Se agrega a <b>' + escapeHtml(buscarTecnica(tec).label) + '</b> y queda guardado para las próximas cotizaciones.</p>' + campoNombre + extra,
+    '<button class="btn btn--ghost btn--wide" data-action="np-cancelar">Cancelar</button>' +
+    '<button class="btn btn--pri btn--wide" data-action="np-guardar">Agregar</button>');
+
+  const ft = document.getElementById('sheetFoot');
+  const soporte = document.getElementById('np-soporte');
+  const planchaWrap = document.getElementById('np-planchaWrap');
+  if (soporte && planchaWrap) {
+    const sync = () => { planchaWrap.hidden = soporte.value === 'rigido'; };
+    soporte.onchange = sync; sync();
+  }
+  const nom = document.getElementById('np-nombre');
+  if (nom) setTimeout(() => nom.focus(), 60);
+
+  ft.querySelector('[data-action="np-cancelar"]').onclick = () => cerrarSheet();
+  ft.querySelector('[data-action="np-guardar"]').onclick = () => {
+    const label = (document.getElementById('np-nombre').value || '').trim();
+    if (!label) { showToast('Ponle un nombre al producto', 'error'); nom.focus(); return; }
+    if (productosDe(tec).some(p => p.label.toLowerCase() === label.toLowerCase())) {
+      showToast('Ya tienes un producto con ese nombre', 'error'); return;
+    }
+    const el = id => document.getElementById(id);
+    const prod = {
+      id: 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+      label, tecnica: tec, propio: true,
+      costoBlancoDefault: el('np-blanco') ? (parseFloat(el('np-blanco').value) || 0) : 0
+    };
+    if (tec === 'sublimacion') prod.plancha = el('np-plancha').value;
+    if (tec === 'vinil') {
+      prod.soporte = el('np-soporte').value;
+      if (prod.soporte === 'textil') prod.plancha = el('np-plancha').value;
+    }
+    if (tec === 'laser') prod.materialModo = el('np-modo').value;
+
+    state.productos.push(prod);
+    guardarProductosStorage(state.productos);
+    cerrarSheet();
+    recordarUltimos();
+    cargarCombinacion(tec, prod.id);
+    showToast(label + ' agregado a tu catálogo');
+  };
+}
+
+function eliminarProductoPropio(id) {
+  const i = state.productos.findIndex(p => p.id === id);
+  if (i === -1) return;
+  const prod = state.productos[i];
+  state.productos.splice(i, 1);
+  guardarProductosStorage(state.productos);
+  delete state.ultimos[claveUltimos(prod.tecnica, id)];
+  guardarUltimosStorage(state.ultimos);
+  if (state.cot.producto === id) {
+    const base = productosDe(prod.tecnica)[0];
+    cargarCombinacion(prod.tecnica, base ? base.id : 'taza');
+  }
+  showToast(prod.label + ' eliminado');
+}
+
+/* ============ 16. SNAPSHOT ============ */
+function construirSnapshot() {
+  const res = state.cot.resultado || calcularAhora();
+  const t = buscarTecnica(state.cot.tecnica), p = buscarProducto(state.cot.tecnica, state.cot.producto);
+  return {
+    id: generarId(),
+    fecha: new Date().toISOString(),
+    cliente: '',
+    tecnica: state.cot.tecnica, tecnicaLabel: t ? t.label : state.cot.tecnica,
+    producto: state.cot.producto, productoLabel: p ? p.label : state.cot.producto,
+    cantidad: state.cot.cantidad,
+    inputs: JSON.parse(JSON.stringify(state.cot.inputs)),
+    utilidadOverride: state.cot.utilidadOverride,
+    aplicaComision: comisionActiva(),
+    resultado: JSON.parse(JSON.stringify(res))
+  };
+}
+
+/* ============ 17. DESGLOSE ============ */
+function lineaHTML(k, v, sub, cls) {
+  return '<div class="bd-l' + (cls ? ' ' + cls : '') + '"><div class="bd-l__k">' + k + (sub ? '<small>' + sub + '</small>' : '') + '</div><div class="bd-l__v">' + v + '</div></div>';
+}
+function desgloseHTML(snap) {
+  const res = snap.resultado, bd = res.breakdown;
+  const cant = snap.cantidad;
+  let h = '';
+
+  h += '<div class="bd-group"><div class="bd-group__t">Materiales por pieza</div>';
+  if (bd.materiales.lineas && bd.materiales.lineas.length) {
+    for (const L of bd.materiales.lineas) {
+      const sub = (L.qty !== undefined && L.unidad) ? formatNum(L.qty, L.qty % 1 === 0 ? 0 : 2) + ' ' + L.unidad + ' × ' + formatMXN(L.unitario) + (L.override ? ' · ajustado (config ' + formatMXN(L.valorConfig) + ')' : '') : '';
+      h += lineaHTML(escapeHtml(L.label), formatMXN(L.total), sub);
+    }
+  } else {
+    h += lineaHTML('Materiales', formatMXN(bd.materiales.base));
+  }
+  h += lineaHTML('Merma ' + Math.round(bd.materiales.mermaPct * 100) + '%', '+' + formatMXN(bd.materiales.total - bd.materiales.base), '', 'bd-l--muted');
+  h += lineaHTML('Subtotal materiales', formatMXN(bd.materiales.total), '', 'bd-l--sum');
+  h += '</div>';
+
+  h += '<div class="bd-group"><div class="bd-group__t">Máquina por pieza</div>';
+  for (const d of bd.maquina.detalle) {
+    h += lineaHTML(escapeHtml(d.nombre),
+      formatMXN(d.subtotal),
+      formatNum(d.horas * 60, 1) + ' min × ' + formatMXN(d.costoHora) + '/h · dep ' + formatMXN(d.dep) + ' + mant ' + formatMXN(d.mant) + ' + luz ' + formatMXN(d.luz));
+  }
+  h += lineaHTML('Subtotal máquina', formatMXN(bd.maquina.total), '', 'bd-l--sum');
+  h += '</div>';
+
+  h += '<div class="bd-group"><div class="bd-group__t">Mano de obra por pieza</div>';
+  h += lineaHTML('Producción', formatMXN(bd.manoObra.costoProduccion), formatNum(bd.manoObra.produccionMin, 1) + ' min' + (bd.manoObra.supervisionProrrateada !== undefined ? ' (incluye supervisión prorrateada)' : ''));
+  h += lineaHTML('Diseño prorrateado', formatMXN(bd.manoObra.costoDiseno), formatNum(bd.manoObra.disenoMinOriginal, 0) + ' min ÷ ' + cant + ' pzas = ' + formatNum(bd.manoObra.disenoMinProrrateado, 2) + ' min');
+  h += lineaHTML('Subtotal mano de obra', formatMXN(bd.manoObra.total), '', 'bd-l--sum');
+  h += '</div>';
+
+  h += '<div class="bd-group"><div class="bd-group__t">Del costo al precio</div>';
+  h += lineaHTML('Costo directo', formatMXN(res.costoDirecto));
+  h += lineaHTML('Gastos indirectos', '+' + formatMXN(res.costoTotal - res.costoDirecto), Math.round(state.config.configGlobal.overheadPct * 100) + '% de overhead');
+  h += lineaHTML('Costo total', formatMXN(res.costoTotal), '', 'bd-l--sum');
+  h += lineaHTML('Precio menudeo', formatMXN(res.precioMenudeoFinal), 'utilidad ' + Math.round(res.utilidadPctUsada * 1000) / 10 + '% · redondeado desde ' + formatMXN(res.precioMenudeoBruto));
+  if (res.descuentoPct > 0) h += lineaHTML('Descuento ' + escapeHtml(res.rango.etiqueta), '−' + Math.round(res.descuentoPct * 100) + '%', formatMXN(res.precioConDescuento));
+  h += lineaHTML('Piso de utilidad mínima', formatMXN(res.piso), Math.round(state.config.configGlobal.utilidadMinimaPct * 100) + '% sobre costo total', 'bd-l--muted');
+  if (res.aplicaComision && res.montoComision > 0) h += lineaHTML('Comisión venta en línea', '+' + formatMXN(res.montoComision), Math.round(res.comisionPct * 100) + '% repercutido');
+  h += lineaHTML('Precio final por pieza', formatMXN(res.precioFinal), '', 'bd-l--sum bd-l--big');
+  h += lineaHTML('Total del pedido (' + cant + ' pzas)', formatMXN(res.totalPedido), '', 'bd-l--sum bd-l--big');
+  h += '</div>';
+
+  if (res.seAplicoPiso) h += '<div class="note note--w">' + ico('alert', 17) + '<span>El descuento por volumen bajaba el precio por debajo de tu utilidad mínima, así que se aplicó el piso. Considera reducir el descuento o el costo.</span></div>';
+
+  const util = res.precioFinal - res.costoTotal;
+  h += '<div class="note note--' + (util > 0 ? 'p' : 'w') + '">' + ico(util > 0 ? 'check' : 'alert', 17) + '<span>Ganas ' + formatMXN(util) + ' por pieza (' + formatNum((util / res.costoTotal) * 100, 1) + '% sobre costo) · ' + formatMXN(util * cant) + ' en todo el pedido.</span></div>';
+  return h;
+}
+
+function construirTextoWhatsApp(snap) {
+  const res = snap.resultado;
+  const L = [];
+  L.push('*Cotización — ' + snap.productoLabel + '*');
+  L.push(snap.tecnicaLabel + ' · ' + snap.cantidad + ' pza' + (snap.cantidad > 1 ? 's' : ''));
+  L.push('');
+  L.push('Precio por pieza: *' + formatMXN(res.precioFinal) + '*');
+  L.push('Total del pedido: *' + formatMXN(res.totalPedido) + '*');
+  if (res.descuentoPct > 0) L.push('Incluye descuento de ' + Math.round(res.descuentoPct * 100) + '% por volumen (' + res.rango.etiqueta + ').');
+  L.push('');
+  L.push('Precio sujeto a cambios sin previo aviso.');
+  return L.join('\n');
+}
+function abrirWhatsApp(snap) {
+  window.open('https://wa.me/?text=' + encodeURIComponent(construirTextoWhatsApp(snap)), '_blank');
+}
+
+function verDesglose(snap) {
+  abrirSheet('Desglose', desgloseHTML(snap),
+    '<button class="btn btn--ghost btn--wide" data-action="cerrar-sheet">Cerrar</button>' +
+    '<button class="btn btn--sec btn--wide" data-action="copiar-desglose">' + ico('copy', 17) + 'Copiar</button>');
+  document.getElementById('sheetFoot').querySelector('[data-action="copiar-desglose"]').onclick = () => {
+    const txt = construirTextoWhatsApp(snap);
+    navigator.clipboard.writeText(txt).then(() => showToast('Cotización copiada')).catch(() => showToast('No se pudo copiar', 'error'));
+  };
+}
+
+/* ============ 17b. COTIZACIÓN EN PDF (para el cliente) ============
+   OJO: este documento es para el CLIENTE. No lleva costos, márgenes ni
+   desglose interno; sólo lo que él tiene que ver: qué, cuánto y cuánto cuesta. */
+function folioDe(snap) {
+  return 'COT-' + new Date(snap.fecha).toISOString().slice(0, 10).replace(/-/g, '') + '-' + String(snap.id || '').slice(-4).toUpperCase();
+}
+function cotizacionPDFHTML(snap) {
+  const res = snap.resultado;
+  const neg = state.config.negocio || {};
+  const nombre = (neg.nombre || '').trim();
+  const tel = (neg.telefono || '').trim();
+  const dias = Number(neg.validezDias) || 15;
+  const f = new Date(snap.fecha);
+  const vence = new Date(f.getTime() + dias * 86400000);
+  const fFecha = d => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  return '' +
+    '<div class="pd__hd">' +
+    '<div><p class="pd__neg">' + escapeHtml(nombre || 'Cotización') + '</p>' +
+    (tel ? '<p class="pd__tel">' + escapeHtml(tel) + '</p>' : '') + '</div>' +
+    '<div class="pd__meta"><b>' + escapeHtml(folioDe(snap)) + '</b><br>' + escapeHtml(fFecha(f)) + '</div>' +
+    '</div>' +
+
+    (nombre ? '<p class="pd__t">Cotización</p>' : '') +
+    '<p class="pd__cli">' + (snap.cliente ? 'Para: <b>' + escapeHtml(snap.cliente) + '</b>' : 'Presupuesto') + '</p>' +
+
+    '<table class="pd__tbl">' +
+    '<colgroup><col class="c-desc"><col class="c-cant"><col class="c-pu"><col class="c-imp"></colgroup>' +
+    '<thead><tr>' +
+    '<th>Concepto</th><th class="num">Cantidad</th><th class="num">Precio unitario</th><th class="num">Importe</th>' +
+    '</tr></thead><tbody><tr>' +
+    '<td class="pd__desc"><b>' + escapeHtml(snap.productoLabel) + '</b><small>' + escapeHtml(snap.tecnicaLabel) + ' · personalizado</small></td>' +
+    '<td class="num">' + snap.cantidad + '</td>' +
+    '<td class="num">' + formatMXN(res.precioFinal) + '</td>' +
+    '<td class="num">' + formatMXN(res.totalPedido) + '</td>' +
+    '</tr></tbody></table>' +
+
+    '<div class="pd__tot"><span>Total</span><b>' + formatMXN(res.totalPedido) + '</b></div>' +
+
+    '<p class="pd__nota">' +
+    (res.descuentoPct > 0 ? 'Precio con descuento por volumen de ' + Math.round(res.descuentoPct * 100) + '% (' + escapeHtml(res.rango.etiqueta) + ').<br>' : '') +
+    'Vigencia de esta cotización: ' + escapeHtml(fFecha(vence)) + ' (' + dias + ' días).<br>' +
+    'Precios en pesos mexicanos. El tiempo de entrega se confirma al aprobar el pedido.' +
+    '</p>';
+}
+
+function descargarPDF(snap) {
+  const doc = document.getElementById('printDoc');
+  if (!doc) return;
+  doc.innerHTML = cotizacionPDFHTML(snap);
+  const tituloPrevio = document.title;
+  // El navegador usa el título del documento como nombre sugerido del archivo.
+  document.title = folioDe(snap) + (snap.cliente ? ' - ' + snap.cliente : '');
+  const limpiar = () => { document.title = tituloPrevio; window.removeEventListener('afterprint', limpiar); };
+  window.addEventListener('afterprint', limpiar);
+  setTimeout(() => { window.print(); setTimeout(limpiar, 1500); }, 60);
+}
+
+function sheetPDF() {
+  const neg = state.config.negocio || {};
+  const avisoNegocio = (neg.nombre || '').trim()
+    ? ''
+    : '<div class="note note--w">' + ico('info', 17) + '<span>Todavía no pones el nombre de tu negocio. Agrégalo en Ajustes y saldrá membretada.</span></div>';
+  abrirSheet('Cotización para el cliente',
+    avisoNegocio +
+    '<div class="field" style="padding-left:0;padding-right:0"><div class="field__top"><label class="field__lbl" for="f-clientePdf">Nombre del cliente (opcional)</label></div>' +
+    '<div class="field__ctl"><div class="inbox"><input id="f-clientePdf" type="text" inputmode="text" placeholder="Ej. Papelería Luna" autocomplete="off"></div></div>' +
+    '<p class="field__hint">El PDF sólo muestra el precio. Tus costos y tu margen nunca salen.</p></div>',
+    '<button class="btn btn--ghost btn--wide" data-action="cerrar-sheet">Cancelar</button>' +
+    '<button class="btn btn--pri btn--wide" data-action="confirmar-pdf">' + ico('pdf', 17) + 'Descargar PDF</button>');
+  setTimeout(() => { const i = document.getElementById('f-clientePdf'); if (i) i.focus(); }, 120);
+  document.getElementById('sheetFoot').querySelector('[data-action="confirmar-pdf"]').onclick = () => {
+    const snap = construirSnapshot();
+    const inp = document.getElementById('f-clientePdf');
+    snap.cliente = inp ? inp.value.trim() : '';
+    cerrarSheet();
+    descargarPDF(snap);
+  };
+}
+
+function sheetGuardar() {
+  abrirSheet('Guardar cotización',
+    '<div class="field" style="padding-left:0;padding-right:0"><div class="field__top"><label class="field__lbl" for="f-cliente">Nombre del cliente (opcional)</label></div>' +
+    '<div class="field__ctl"><div class="inbox"><input id="f-cliente" type="text" inputmode="text" placeholder="Ej. Papelería Luna" autocomplete="off"></div></div>' +
+    '<p class="field__hint">Se guarda en tu historial local, en este dispositivo.</p></div>',
+    '<button class="btn btn--ghost btn--wide" data-action="cerrar-sheet">Cancelar</button>' +
+    '<button class="btn btn--pri btn--wide" data-action="confirmar-guardar">Guardar</button>');
+  setTimeout(() => { const i = document.getElementById('f-cliente'); if (i) i.focus(); }, 120);
+  document.getElementById('sheetFoot').querySelector('[data-action="confirmar-guardar"]').onclick = () => {
+    const snap = construirSnapshot();
+    const inp = document.getElementById('f-cliente');
+    snap.cliente = inp ? inp.value.trim() : '';
+    state.historial.unshift(snap);
+    if (state.historial.length > 200) state.historial.length = 200;
+    guardarHistorialStorage(state.historial);
+    cerrarSheet();
+    showToast('Cotización guardada');
+  };
+}
+/* ============ 18. AJUSTES ============ */
+const GRUPOS_CONFIG = [
+  {
+    titulo: 'Datos para la cotización', campos: [
+      { path: 'negocio.nombre', label: 'Nombre de tu negocio', type: 'text', placeholder: 'Ej. Personalizados Cruz', hint: 'Aparece como membrete en el PDF que le mandas al cliente.' },
+      { path: 'negocio.telefono', label: 'Teléfono o WhatsApp', type: 'text', placeholder: 'Ej. 55 1234 5678' },
+      { path: 'negocio.validezDias', label: 'Vigencia de la cotización', type: 'int', step: 1, suffix: 'días' }
+    ]
+  },
+  {
+    titulo: 'Tu negocio', campos: [
+      { path: 'configGlobal.sueldoHora', label: 'Sueldo por hora', type: 'money', step: 5 },
+      { path: 'configGlobal.sueldoMensualDeseado', label: 'Sueldo mensual deseado', type: 'money', step: 500, hint: 'Referencia: sueldo mensual ÷ horas laborales = sueldo por hora.' },
+      { path: 'configGlobal.horasLaboralesMes', label: 'Horas laborales al mes', type: 'int', step: 10, suffix: 'h' },
+      { path: 'configGlobal.tarifaKwh', label: 'Tarifa eléctrica', type: 'money', step: 0.05, suffix: '/kWh' },
+      { path: 'configGlobal.overheadPct', label: 'Gastos indirectos', type: 'pct', step: 1, hint: 'Renta, internet, empaque, software. Se suma sobre el costo directo.' },
+      { path: 'configGlobal.valorRescatePct', label: 'Valor de rescate de máquinas', type: 'pct', step: 1 }
+    ]
+  },
+  {
+    titulo: 'Precios y utilidad', campos: [
+      { path: 'configGlobal.utilidadMenudeoPct', label: 'Utilidad de menudeo', type: 'pct', step: 5 },
+      { path: 'configGlobal.utilidadMinimaPct', label: 'Utilidad mínima (piso)', type: 'pct', step: 1, hint: 'Ningún descuento puede bajar el precio por debajo de este margen.' },
+      { path: 'configGlobal.comisionVentaOnlinePct', label: 'Comisión de venta en línea', type: 'pct', step: 1 },
+      { path: 'configGlobal.aplicaComisionVentaOnline', label: 'Aplicar comisión por defecto', type: 'switch' }
+    ]
+  },
+  {
+    titulo: 'Merma por técnica', campos: [
+      { path: 'configGlobal.mermaPct.sublimacion', label: 'Sublimación', type: 'pct', step: 1 },
+      { path: 'configGlobal.mermaPct.vinil', label: 'Vinil', type: 'pct', step: 1 },
+      { path: 'configGlobal.mermaPct.laser', label: 'Láser', type: 'pct', step: 1 },
+      { path: 'configGlobal.mermaPct.impresion3d', label: 'Impresión 3D', type: 'pct', step: 1 },
+      { path: 'configGlobal.tiempoSupervisionImpresion3DMin', label: 'Supervisión de impresión 3D', type: 'int', step: 1, suffix: 'min' }
+    ]
+  },
+  {
+    titulo: 'Insumos — sublimación', campos: [
+      { path: 'catalogoInsumos.sublimacion.costoPorHojaSublimacion', label: 'Papel de sublimación', type: 'money', step: 0.1, suffix: '/hoja' },
+      { path: 'catalogoInsumos.sublimacion.blancoTazaDefault', label: 'Taza 11oz', type: 'money', step: 1 },
+      { path: 'catalogoInsumos.sublimacion.blancoPlayeraDefault', label: 'Playera', type: 'money', step: 5 },
+      { path: 'catalogoInsumos.sublimacion.blancoGorraDefault', label: 'Gorra', type: 'money', step: 1 },
+      { path: 'catalogoInsumos.sublimacion.blancoTumblerDefault', label: 'Tumbler 20oz', type: 'money', step: 5 },
+      { path: 'catalogoInsumos.sublimacion.blancoTequileroDefault', label: 'Tequilero', type: 'money', step: 1 }
+    ]
+  },
+  {
+    titulo: 'Insumos — vinil, láser y 3D', campos: [
+      { path: 'catalogoInsumos.vinil.costoPorMetroVinilTextil', label: 'Vinil textil', type: 'money', step: 5, suffix: '/m' },
+      { path: 'catalogoInsumos.vinil.costoPorMetroVinilAdhesivo', label: 'Vinil adhesivo', type: 'money', step: 5, suffix: '/m' },
+      { path: 'catalogoInsumos.vinil.blancoPlayeraDefault', label: 'Playera para vinil', type: 'money', step: 5 },
+      { path: 'catalogoInsumos.vinil.blancoGorraDefault', label: 'Gorra para vinil', type: 'money', step: 1 },
+      { path: 'catalogoInsumos.laser.costoHojaMdf3mmDefault', label: 'Hoja MDF 3mm', type: 'money', step: 5, suffix: '/hoja' },
+      { path: 'catalogoInsumos.laser.costoHojaAcrilicoDefault', label: 'Hoja de acrílico', type: 'money', step: 5, suffix: '/hoja' },
+      { path: 'catalogoInsumos.impresion3d.costoPorGramoPLA', label: 'Filamento PLA', type: 'money', step: 0.01, suffix: '/g' },
+      { path: 'catalogoInsumos.impresion3d.costoPorGramoPETG', label: 'Filamento PETG', type: 'money', step: 0.01, suffix: '/g' }
+    ]
+  }
+];
+const CAMPOS_MAQUINA = [
+  { k: 'costoCompraMxn', label: 'Costo de compra', type: 'money', step: 100 },
+  { k: 'vidaUtilHoras', label: 'Vida útil', type: 'int', step: 100, suffix: 'h' },
+  { k: 'watts', label: 'Consumo', type: 'int', step: 10, suffix: 'W' },
+  { k: 'mantenimientoAnualMxn', label: 'Mantenimiento anual', type: 'money', step: 50 },
+  { k: 'horasUsoAnual', label: 'Horas de uso al año', type: 'int', step: 50, suffix: 'h' }
+];
+let maquinaAbierta = null;
+
+function cfgFilaHTML(f) {
+  const raw = getPath(state.configDraft, f.path);
+  if (f.type === 'switch') {
+    return '<div class="panel__row"><span class="panel__lbl">' + escapeHtml(f.label) + (f.hint ? '<small>' + escapeHtml(f.hint) + '</small>' : '') + '</span>' +
+      '<button class="sw" role="switch" data-action="cfg-switch" data-path="' + f.path + '" aria-checked="' + (!!raw) + '" aria-label="' + escapeHtml(f.label) + '"></button></div>';
+  }
+  const val = f.type === 'pct' ? Math.round(raw * 10000) / 100 : raw;
+  if (f.type === 'text') {
+    return '<div class="field">' +
+      '<div class="field__top"><label class="field__lbl" for="c-' + f.path + '">' + escapeHtml(f.label) + '</label></div>' +
+      '<div class="field__ctl"><div class="inbox">' +
+      '<input id="c-' + f.path + '" data-cfg="' + f.path + '" data-cfgtype="text" type="text" autocomplete="off" placeholder="' + escapeHtml(f.placeholder || '') + '" value="' + escapeHtml(raw == null ? '' : raw) + '">' +
+      '</div></div>' +
+      (f.hint ? '<p class="field__hint">' + escapeHtml(f.hint) + '</p>' : '') +
+      '</div>';
+  }
+  const pre = f.type === 'money' ? '$' : '';
+  const suf = f.type === 'pct' ? '%' : (f.suffix || '');
+  return '<div class="field">' +
+    '<div class="field__top"><label class="field__lbl" for="c-' + f.path + '">' + escapeHtml(f.label) + '</label></div>' +
+    '<div class="field__ctl"><div class="inbox">' + (pre ? '<span class="inbox__fix">' + pre + '</span>' : '') +
+    '<input id="c-' + f.path + '" data-cfg="' + f.path + '" data-cfgtype="' + f.type + '" type="number" inputmode="decimal" min="0" step="' + (f.step || 1) + '" value="' + val + '">' +
+    (suf ? '<span class="inbox__fix">' + escapeHtml(suf) + '</span>' : '') + '</div></div>' +
+    (f.hint ? '<p class="field__hint">' + escapeHtml(f.hint) + '</p>' : '') +
+    '</div>';
+}
+
+function maquinaHTML(id) {
+  const m = state.configDraft.maquinas[id];
+  const g = state.configDraft.configGlobal;
+  const ch = costoMaquinaHora(m, g.tarifaKwh, g.valorRescatePct);
+  const abierta = maquinaAbierta === id;
+  let h = '<button class="panel__row panel__row--btn" data-action="toggle-maquina" data-id="' + id + '" aria-expanded="' + abierta + '">' +
+    '<span class="panel__lbl">' + escapeHtml(m.nombre) + '<small>' + formatMXN(ch.total) + ' por hora</small></span>' +
+    '<span style="color:var(--ink-3);transform:rotate(' + (abierta ? '0' : '-90') + 'deg);transition:transform .18s">' + ico('chevronDown', 18) + '</span></button>';
+  if (abierta) {
+    h += '<div style="background:var(--surface-2);border-top:1px solid var(--line)"><div class="fields">' +
+      CAMPOS_MAQUINA.map(f => cfgFilaHTML({ path: 'maquinas.' + id + '.' + f.k, label: f.label, type: f.type, step: f.step, suffix: f.suffix })).join('') +
+      '</div><div style="padding:0 16px 14px"><div class="derived"><span>Depreciación + mantenimiento + luz</span><b>' + formatMXN(ch.dep) + ' + ' + formatMXN(ch.mant) + ' + ' + formatMXN(ch.luz) + '</b></div></div></div>';
+  }
+  return h;
+}
+
+function hayCambiosConfig() {
+  return JSON.stringify(state.configDraft) !== JSON.stringify(state.config);
+}
+
+function renderConfig() {
+  if (!state.configDraft) state.configDraft = clonarConfig(state.config);
+  let h = '<div class="wrap">';
+  for (const g of GRUPOS_CONFIG) {
+    h += '<div class="sec"><div class="sec__hd"><span class="sec__t">' + escapeHtml(g.titulo) + '</span></div>' +
+      '<div class="panel"><div class="fields">' + g.campos.map(cfgFilaHTML).join('') + '</div></div></div>';
+  }
+  h += '<div class="sec"><div class="sec__hd"><span class="sec__t">Máquinas</span><span class="sec__aside">costo por hora</span></div>' +
+    '<div class="panel">' + Object.keys(state.configDraft.maquinas).map(maquinaHTML).join('') + '</div></div>';
+  if (state.productos.length) {
+    h += '<div class="sec"><div class="sec__hd"><span class="sec__t">Mis productos</span><span class="sec__aside">' + state.productos.length + '</span></div><div class="panel">' +
+      state.productos.map(p => {
+        const t = buscarTecnica(p.tecnica);
+        return '<div class="panel__row"><span class="panel__lbl">' + escapeHtml(p.label) +
+          '<small>' + escapeHtml(t ? t.label : p.tecnica) + (p.costoBlancoDefault ? ' · blanco ' + formatMXN(p.costoBlancoDefault) : '') + '</small></span>' +
+          '<button class="btn btn--ghost btn--sm" data-action="borrar-producto" data-id="' + escapeHtml(p.id) + '" aria-label="Eliminar ' + escapeHtml(p.label) + '" style="color:var(--neg)">' + ico('trash', 16) + '</button></div>';
+      }).join('') + '</div></div>';
+  }
+  h += '<div class="sec"><div class="sec__hd"><span class="sec__t">Datos</span></div><div class="panel">' +
+    '<button class="panel__row panel__row--btn" data-action="exportar"><span class="panel__lbl">Exportar configuración<small>Descarga un archivo JSON de respaldo</small></span><span style="color:var(--ink-3)">' + ico('chevronRight', 18) + '</span></button>' +
+    '<button class="panel__row panel__row--btn" data-action="importar"><span class="panel__lbl">Importar configuración<small>Restaura desde un archivo JSON</small></span><span style="color:var(--ink-3)">' + ico('chevronRight', 18) + '</span></button>' +
+    '<button class="panel__row panel__row--btn" data-action="reset-config"><span class="panel__lbl" style="color:var(--neg)">Restablecer valores de fábrica<small>Borra tus ajustes personalizados</small></span><span style="color:var(--neg)">' + ico('reset', 18) + '</span></button>' +
+    '</div></div>';
+  h += '<p style="margin:22px 2px 0;font-size:12px;line-height:1.5;color:var(--ink-3)">' + escapeHtml(state.configDraft.notasVigencia) + '</p>';
+  h += '</div>';
+  document.getElementById('view').innerHTML = h;
+  document.getElementById('view').classList.toggle('has-dock', hayCambiosConfig());
+  renderDirtyBar();
+}
+
+function renderDirtyBar() {
+  const dock = document.getElementById('dock');
+  if (!hayCambiosConfig()) { dock.hidden = true; dock.innerHTML = ''; document.getElementById('view').classList.remove('has-dock'); return; }
+  dock.hidden = false;
+  dock.className = 'dirtybar';
+  dock.innerHTML = '<div class="wrap dirtybar__in"><span class="dirtybar__t">Tienes cambios sin guardar</span>' +
+    '<button class="btn btn--ghost btn--sm" data-action="descartar-config">Descartar</button>' +
+    '<button class="btn btn--pri btn--sm" data-action="guardar-config">Guardar</button></div>';
+  document.getElementById('view').classList.add('has-dock');
+}
+/* ============ 19. HISTORIAL ============ */
+function renderHistorial() {
+  const q = (state.filtroHistorial || '').trim().toLowerCase();
+  const items = state.historial.filter(s => {
+    if (!q) return true;
+    return ((s.cliente || '') + ' ' + (s.productoLabel || '') + ' ' + (s.tecnicaLabel || '')).toLowerCase().includes(q);
+  });
+
+  let h = '<div class="wrap">';
+  if (state.historial.length) {
+    h += '<div class="sec" style="margin-top:10px"><div class="search">' + ico('search', 18) +
+      '<input id="q-hist" type="search" placeholder="Buscar por cliente o producto" value="' + escapeHtml(state.filtroHistorial) + '" autocomplete="off"></div></div>';
+  }
+  if (!items.length) {
+    h += '<div class="empty">' + ico(state.historial.length ? 'search' : 'receipt', 34) +
+      '<h3>' + (state.historial.length ? 'Sin resultados' : 'Aún no hay cotizaciones') + '</h3>' +
+      '<p>' + (state.historial.length ? 'Prueba con otro nombre de cliente o producto.' : 'Cotiza algo y toca Guardar para tenerlo aquí.') + '</p></div>';
+  } else {
+    h += '<div class="sec"><div class="sec__hd"><span class="sec__t">' + items.length + ' cotización' + (items.length > 1 ? 'es' : '') + '</span>' +
+      (state.historial.length > 1 ? '<button class="linkbtn" data-action="limpiar-historial">Borrar todo</button>' : '') + '</div>';
+    for (const s of items) {
+      const r = s.resultado;
+      h += '<div class="card">' +
+        '<div class="card__hd"><div style="min-width:0">' +
+        '<div class="card__t">' + escapeHtml(s.cliente || s.productoLabel) + '</div>' +
+        '<div class="card__sub">' + escapeHtml(s.tecnicaLabel) + ' · ' + escapeHtml(s.productoLabel) + ' · ' + s.cantidad + ' pza' + (s.cantidad > 1 ? 's' : '') + '</div>' +
+        '<div class="card__sub">' + formatFecha(s.fecha) + '</div>' +
+        '</div><div class="card__p">' + formatMXN(r.precioFinal) + '<small>' + formatMXN(r.totalPedido) + ' total</small></div></div>' +
+        '<div class="card__acts">' +
+        '<button class="btn btn--ghost btn--sm" data-action="hist-desglose" data-id="' + s.id + '">' + ico('layers', 16) + 'Desglose</button>' +
+        '<button class="btn btn--ghost btn--sm" data-action="hist-wa" data-id="' + s.id + '">' + ico('send', 16) + 'Enviar</button>' +
+        '<button class="btn btn--ghost btn--sm" data-action="hist-dup" data-id="' + s.id + '">' + ico('copy', 16) + 'Duplicar</button>' +
+        '<button class="btn btn--ghost btn--sm" data-action="pdf-hist" data-id="' + s.id + '">' + ico('pdf', 16) + 'PDF</button>' +
+        '<button class="btn btn--ghost btn--sm" data-action="hist-del" data-id="' + s.id + '" aria-label="Borrar" style="color:var(--neg)">' + ico('trash', 16) + '</button>' +
+        '</div></div>';
+    }
+    h += '</div>';
+  }
+  h += '</div>';
+  document.getElementById('view').innerHTML = h;
+  document.getElementById('view').classList.remove('has-dock');
+  document.getElementById('dock').hidden = true;
+}
+
+function buscarSnapshot(id) { return state.historial.find(s => s.id === id); }
+
+/* Recarga una cotización guardada en el formulario. */
+function duplicarSnapshot(id) {
+  const s = buscarSnapshot(id);
+  if (!s) return;
+  state.cot.tecnica = s.tecnica;
+  state.cot.producto = s.producto;
+  state.cot.cantidad = Math.max(1, s.cantidad || 1);
+  state.cot.inputs = defaultsFormulario(s.tecnica, s.producto, s.inputs || {});
+  state.cot.utilidadOverride = (s.utilidadOverride === undefined) ? null : s.utilidadOverride;
+  state.cot.aplicaComision = (s.aplicaComision === undefined) ? null : s.aplicaComision;
+  cambiarTab('cotizar');
+  showToast('Cotización cargada');
+}
+
+/* ============ 20. EXPORTAR / IMPORTAR ============ */
+function exportarConfig() {
+  try {
+    const payload = Object.assign({}, state.configDraft || state.config, { productosPropios: state.productos });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'cotizador-config-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    showToast('Configuración exportada');
+  } catch (e) { showToast('No se pudo exportar', 'error'); }
+}
+function importarConfig() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'application/json,.json';
+  inp.onchange = () => {
+    const f = inp.files && inp.files[0];
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const datos = JSON.parse(rd.result);
+        if (Array.isArray(datos.productosPropios)) {
+          state.productos = datos.productosPropios.filter(p => p && p.id && p.tecnica);
+          guardarProductosStorage(state.productos);
+        }
+        delete datos.productosPropios;
+        state.configDraft = mergeConfigProfundo(clonarConfig(CONFIG_DEFAULT), datos);
+        renderConfig();
+        showToast('Configuración cargada, revisa y guarda');
+      } catch (e) { showToast('Archivo inválido', 'error'); }
+    };
+    rd.readAsText(f);
+  };
+  inp.click();
+}
+/* ============ 21. TABS ============ */
+const TABS = [
+  { id: 'cotizar', label: 'Cotizar', icon: 'receipt', titulo: 'Cotizar' },
+  { id: 'historial', label: 'Historial', icon: 'clock', titulo: 'Historial' },
+  { id: 'config', label: 'Ajustes', icon: 'sliders', titulo: 'Ajustes' }
+];
+function renderTabs() {
+  document.getElementById('tabbar').innerHTML = TABS.map(t =>
+    '<button class="tabbar__b" role="tab" data-action="tab" data-id="' + t.id + '" aria-selected="' + (t.id === state.tabActiva) + '">' +
+    ico(t.icon, 22) + '<span>' + t.label + '</span></button>').join('');
+}
+function cambiarTab(id) {
+  if (state.tabActiva === 'config' && id !== 'config' && hayCambiosConfig()) {
+    confirmar('Cambios sin guardar', 'Tienes ajustes que no has guardado. Si sales se perderán.', 'Salir sin guardar', true)
+      .then(ok => { if (ok) { state.configDraft = null; irTab(id); } });
+    return;
+  }
+  irTab(id);
+}
+function irTab(id) {
+  state.tabActiva = id;
+  const t = TABS.find(x => x.id === id);
+  document.getElementById('topTitle').textContent = t ? t.titulo : '';
+  const dock = document.getElementById('dock');
+  dock.className = 'dock'; dock.hidden = true; dock.innerHTML = '';
+  renderTabs();
+  if (id === 'cotizar') renderCotizar();
+  else if (id === 'historial') renderHistorial();
+  else renderConfig();
+  window.scrollTo(0, 0);
+}
+
+/* ============ 22. CAMBIO DE TÉCNICA / PRODUCTO ============ */
+function claveUltimos(t, p) { return t + '_' + p; }
+function recordarUltimos() {
+  state.ultimos[claveUltimos(state.cot.tecnica, state.cot.producto)] = Object.assign({ __cant: state.cot.cantidad }, state.cot.inputs);
+  guardarUltimosStorage(state.ultimos);
+}
+function cargarCombinacion(tecnica, producto) {
+  const prev = state.ultimos[claveUltimos(tecnica, producto)] || {};
+  const cant = prev.__cant;
+  const limpio = Object.assign({}, prev); delete limpio.__cant;
+  state.cot.tecnica = tecnica;
+  state.cot.producto = producto;
+  state.cot.inputs = defaultsFormulario(tecnica, producto, limpio);
+  if (cant) state.cot.cantidad = Math.max(1, parseInt(cant, 10) || 1);
+  renderCotizar();
+}
+
+/* ============ 23. EVENTOS ============ */
+function onInput(e) {
+  const el = e.target;
+
+  if (el.id === 'f-cantidad') {
+    state.cot.cantidad = Math.max(1, parseInt(el.value, 10) || 1);
+    document.querySelectorAll('[data-action="cant-set"]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.n) === state.cot.cantidad)));
+    actualizarVivo(); recordarUltimos(); return;
+  }
+  if (el.id === 'utilSlider') {
+    state.cot.utilidadOverride = Number(el.value) / 100;
+    const v = document.getElementById('utilVal');
+    if (v) v.textContent = formatNum(Number(el.value), 0) + '%';
+    actualizarVivo(); return;
+  }
+  if (el.id === 'q-hist') { state.filtroHistorial = el.value; renderHistorial(); const i = document.getElementById('q-hist'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } return; }
+
+  if (el.dataset.capaNombre !== undefined) {
+    const i = Number(el.dataset.capaNombre);
+    const capa = (state.cot.inputs.capas || [])[i];
+    if (!capa) return;
+    capa.nombre = el.value;
+    actualizarVivo(); recordarUltimos(); return;
+  }
+  if (el.dataset.capaField) {
+    const i = Number(el.dataset.i), key = el.dataset.capaField, tipo = el.dataset.type;
+    const capa = (state.cot.inputs.capas || [])[i];
+    if (!capa) return;
+    const factor = Number(el.dataset.factor) || 1;
+    const crudo = el.value === '' ? '' : (tipo === 'int' ? (parseInt(el.value, 10) || 0) : (parseFloat(el.value) || 0));
+    capa[key] = crudo === '' ? '' : (factor !== 1 ? crudo / factor : crudo);
+    refrescarMetaCapa(i, key);
+    actualizarVivo(); recordarUltimos(); return;
+  }
+
+  if (el.dataset.field) {
+    const id = el.dataset.field, tipo = el.dataset.type;
+    // Selects que cambian QUÉ campos se muestran: hay que reconstruir el formulario.
+    const MODOS = ['hojaModo', 'vinilModo', 'materialModo', 'filamentoModo'];
+    if (tipo === 'select' && MODOS.indexOf(id) !== -1) {
+      state.cot.inputs[id] = el.value;
+      state.cot.inputs = defaultsFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+      renderCotizar(); recordarUltimos(); return;
+    }
+    if (tipo === 'select') {
+      state.cot.inputs[id] = el.value;
+      if (id === 'tipoFilamento') {
+        // El costo por gramo depende del filamento: cada color vuelve al default del nuevo material.
+        const cfg = el.value === 'PLA' ? 'catalogoInsumos.impresion3d.costoPorGramoPLA' : 'catalogoInsumos.impresion3d.costoPorGramoPETG';
+        const nuevo = getPath(state.config, cfg);
+        (state.cot.inputs.capas || []).forEach(c => { c.costoPorGramo = nuevo; });
+        renderCotizar(); recordarUltimos(); return;
+      }
+    } else {
+      const factor = Number(el.dataset.factor) || 1;
+      const crudo = el.value === '' ? '' : (tipo === 'int' ? (parseInt(el.value, 10) || 0) : (parseFloat(el.value) || 0));
+      state.cot.inputs[id] = crudo === '' ? '' : (factor !== 1 ? crudo / factor : crudo);
+    }
+    refrescarMetaCampo(id);
+    actualizarVivo(); recordarUltimos(); return;
+  }
+
+  if (el.dataset.cfg) {
+    const path = el.dataset.cfg, tipo = el.dataset.cfgtype;
+    if (tipo === 'text') { setPath(state.configDraft, path, el.value); renderDirtyBar(); return; }
+    let v = parseFloat(el.value);
+    if (isNaN(v)) v = 0;
+    setPath(state.configDraft, path, tipo === 'pct' ? v / 100 : v);
+    if (path.indexOf('maquinas.') === 0 || path === 'configGlobal.tarifaKwh' || path === 'configGlobal.valorRescatePct') {
+      const id = path.split('.')[1];
+      if (state.configDraft.maquinas[id]) {
+        const m = state.configDraft.maquinas[id];
+        const ch = costoMaquinaHora(m, state.configDraft.configGlobal.tarifaKwh, state.configDraft.configGlobal.valorRescatePct);
+        const row = document.querySelector('[data-action="toggle-maquina"][data-id="' + id + '"] small');
+        if (row) row.textContent = formatMXN(ch.total) + ' por hora';
+      }
+    }
+    renderDirtyBar(); return;
+  }
+}
+
+function onClick(e) {
+  const b = e.target.closest('[data-action]');
+  if (!b) return;
+  const a = b.dataset.action;
+
+  if (a === 'tab') { cambiarTab(b.dataset.id); return; }
+  if (a === 'cerrar-sheet') { cerrarSheet(); return; }
+
+  if (a === 'elegir-tecnica') {
+    if (b.dataset.id === state.cot.tecnica) return;
+    recordarUltimos();
+    const nueva = b.dataset.id;
+    cargarCombinacion(nueva, PRODUCTOS[nueva][0].id); return;
+  }
+  if (a === 'nuevo-producto') { sheetNuevoProducto(); return; }
+  if (a === 'pdf-cot') { sheetPDF(); return; }
+  if (a === 'pdf-hist') {
+    const snap = buscarSnapshot(b.dataset.id);
+    if (snap) descargarPDF(snap);
+    return;
+  }
+  if (a === 'borrar-producto') {
+    const prod = state.productos.find(p => p.id === b.dataset.id);
+    if (!prod) return;
+    confirmar('Eliminar producto', '¿Quitar "' + prod.label + '" de tu catálogo? Las cotizaciones ya guardadas no se tocan.', 'Eliminar', true)
+      .then(ok => { if (ok) { eliminarProductoPropio(prod.id); renderConfig(); } });
+    return;
+  }
+  if (a === 'elegir-producto') {
+    if (b.dataset.id === state.cot.producto) return;
+    recordarUltimos();
+    cargarCombinacion(state.cot.tecnica, b.dataset.id); return;
+  }
+  if (a === 'cant-menos' || a === 'cant-mas') {
+    state.cot.cantidad = Math.max(1, state.cot.cantidad + (a === 'cant-mas' ? 1 : -1));
+    const i = document.getElementById('f-cantidad'); if (i) i.value = state.cot.cantidad;
+    document.querySelectorAll('[data-action="cant-set"]').forEach(x => x.setAttribute('aria-pressed', String(Number(x.dataset.n) === state.cot.cantidad)));
+    actualizarVivo(); recordarUltimos(); return;
+  }
+  if (a === 'cant-set') {
+    state.cot.cantidad = Number(b.dataset.n);
+    const i = document.getElementById('f-cantidad'); if (i) i.value = state.cot.cantidad;
+    document.querySelectorAll('[data-action="cant-set"]').forEach(x => x.setAttribute('aria-pressed', String(Number(x.dataset.n) === state.cot.cantidad)));
+    actualizarVivo(); recordarUltimos(); return;
+  }
+  if (a === 'reset-campo') {
+    const campos = camposFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+    const c = campos.find(x => x.id === b.dataset.id);
+    if (!c) return;
+    state.cot.inputs[c.id] = getPath(state.config, c.configPath);
+    const inp = document.getElementById('f-' + c.id); if (inp) inp.value = state.cot.inputs[c.id] * (c.factor || 1);
+    refrescarMetaCampo(c.id); actualizarVivo(); recordarUltimos(); return;
+  }
+  if (a === 'capa-add') {
+    const esp = especCapas(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+    if (!esp) return;
+    const arr = (state.cot.inputs.capas || []).slice();
+    if (arr.length >= MAX_CAPAS) { showToast('Máximo ' + MAX_CAPAS + ' ' + esp.plural, 'error'); return; }
+    arr.push(capaNueva(esp));
+    state.cot.inputs.capas = arr;
+    state.cot.inputs = defaultsFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+    renderCotizar(); recordarUltimos();
+    const nuevo = document.querySelector('[data-capa-nombre="' + (arr.length - 1) + '"]');
+    if (nuevo) nuevo.focus();
+    return;
+  }
+  if (a === 'capa-del') {
+    const arr = (state.cot.inputs.capas || []).slice();
+    if (arr.length <= 1) return;
+    arr.splice(Number(b.dataset.i), 1);
+    state.cot.inputs.capas = arr;
+    state.cot.inputs = defaultsFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+    renderCotizar(); recordarUltimos(); return;
+  }
+  if (a === 'reset-utilidad') { state.cot.utilidadOverride = null; renderCotizar(); return; }
+  if (a === 'toggle-comision') {
+    state.cot.aplicaComision = !comisionActiva();
+    b.setAttribute('aria-checked', String(state.cot.aplicaComision));
+    actualizarVivo(); return;
+  }
+  if (a === 'ver-desglose') { verDesglose(construirSnapshot()); return; }
+  if (a === 'guardar-cot') { sheetGuardar(); return; }
+
+  if (a === 'hist-desglose') { const s = buscarSnapshot(b.dataset.id); if (s) verDesglose(s); return; }
+  if (a === 'hist-wa') { const s = buscarSnapshot(b.dataset.id); if (s) abrirWhatsApp(s); return; }
+  if (a === 'hist-dup') { duplicarSnapshot(b.dataset.id); return; }
+  if (a === 'hist-del') {
+    confirmar('Borrar cotización', '¿Seguro que quieres borrar esta cotización del historial?', 'Borrar', true).then(ok => {
+      if (!ok) return;
+      state.historial = state.historial.filter(s => s.id !== b.dataset.id);
+      guardarHistorialStorage(state.historial); renderHistorial(); showToast('Cotización borrada');
+    });
+    return;
+  }
+  if (a === 'limpiar-historial') {
+    confirmar('Borrar historial', 'Se eliminarán las ' + state.historial.length + ' cotizaciones guardadas en este dispositivo.', 'Borrar todo', true).then(ok => {
+      if (!ok) return;
+      state.historial = []; guardarHistorialStorage(state.historial); renderHistorial(); showToast('Historial vacío');
+    });
+    return;
+  }
+
+  if (a === 'toggle-maquina') { maquinaAbierta = maquinaAbierta === b.dataset.id ? null : b.dataset.id; renderConfig(); return; }
+  if (a === 'cfg-switch') {
+    const path = b.dataset.path;
+    setPath(state.configDraft, path, !getPath(state.configDraft, path));
+    b.setAttribute('aria-checked', String(!!getPath(state.configDraft, path)));
+    renderDirtyBar(); return;
+  }
+  if (a === 'guardar-config') {
+    state.config = clonarConfig(state.configDraft);
+    guardarConfigStorage(state.config);
+    state.cot.inputs = defaultsFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+    renderConfig(); showToast('Configuración guardada'); return;
+  }
+  if (a === 'descartar-config') { state.configDraft = clonarConfig(state.config); maquinaAbierta = null; renderConfig(); showToast('Cambios descartados'); return; }
+  if (a === 'exportar') { exportarConfig(); return; }
+  if (a === 'importar') { importarConfig(); return; }
+  if (a === 'reset-config') {
+    confirmar('Restablecer configuración', 'Se recuperarán todos los valores de fábrica y se perderán tus ajustes.', 'Restablecer', true).then(ok => {
+      if (!ok) return;
+      state.configDraft = clonarConfig(CONFIG_DEFAULT);
+      state.config = clonarConfig(CONFIG_DEFAULT);
+      guardarConfigStorage(state.config);
+      state.cot.inputs = defaultsFormulario(state.cot.tecnica, state.cot.producto, {});
+      maquinaAbierta = null; renderConfig(); showToast('Valores de fábrica restaurados');
+    });
+    return;
+  }
+}
+
+/* ============ 24. INIT ============ */
+function init() {
+  state.cot.cantidad = 1;
+  state.cot.inputs = defaultsFormulario(state.cot.tecnica, state.cot.producto, {});
+  document.addEventListener('click', onClick);
+  document.addEventListener('input', onInput);
+  document.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.type === 'select') onInput(e); });
+  document.addEventListener('focusin', e => {
+    if (e.target.tagName === 'INPUT' && e.target.type === 'number') { try { e.target.select(); } catch (err) { } }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !document.getElementById('sheetWrap').hidden) cerrarSheet();
+  });
+  const topbar = document.querySelector('.topbar');
+  window.addEventListener('scroll', () => { topbar.classList.toggle('is-stuck', window.scrollY > 4); }, { passive: true });
+  irTab('cotizar');
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+</script>
+</body>
+</html>

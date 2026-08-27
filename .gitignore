@@ -1,0 +1,8 @@
+# Archivos de trabajo local: no se publican.
+_verify/
+_backup/
+node_modules/
+*.tmp.js
+*.tmp.mjs
+.DS_Store
+Thumbs.db
