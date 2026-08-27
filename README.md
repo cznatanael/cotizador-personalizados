@@ -18,9 +18,19 @@ Queda con su ícono y abre a pantalla completa, sin barra de navegador.
 
 ### Si no carga
 
-1. **Revisa la dirección: va todo en minúsculas.** `cznatanael.github.io/Cotizador-Personalizados` da error 404; sólo funciona `cotizador-personalizados`.
-2. **Ábrelo en una pestaña de incógnito.** Si ahí sí abre, era caché vieja: en el navegador normal recarga con `Ctrl + F5` (en el celular, borra los datos del sitio).
-3. **Revisa que el atajo apunte a la web.** Si empieza con `file:///C:/...` estás abriendo una copia local, no el sitio.
+1. **Ábrelo con `?nuevo=1` al final.** Así:
+   `https://cznatanael.github.io/cotizador-personalizados/?nuevo=1`
+   Eso obliga al navegador a bajar la versión nueva en vez de la que tenía guardada.
+   Sirve igual en celular que en computadora, y con hacerlo **una sola vez** basta:
+   ahí queda instalado el modo sin internet y de ahí en adelante ya entras normal.
+2. **Si ya tenías el ícono en la pantalla principal, bórralo y vuelve a agregarlo**
+   después de hacer lo anterior. El ícono viejo sigue apuntando a la versión vieja.
+3. **Si no quieres hacer nada, espera 10 minutos.** La copia guardada se vence sola
+   y el navegador jala la nueva.
+4. **Revisa la dirección: va todo en minúsculas.**
+   `cznatanael.github.io/Cotizador-Personalizados` da error 404.
+5. **Revisa que el atajo apunte a la web.** Si empieza con `file:///C:/...` estás
+   abriendo una copia local, no el sitio.
 
 ## Qué hace
 
