@@ -5,7 +5,16 @@ Parte de tus costos reales (material, luz, desgaste de máquina, tu tiempo) y ll
 
 ## Ábrelo aquí
 
+**https://cotizador-personalizados.vercel.app/**
+
+Si esa no abre, esta es la misma app en otro servidor:
 **https://cznatanael.github.io/cotizador-personalizados/**
+
+> Hay dos direcciones a propósito. Algunas redes de celular, de escuela o de
+> oficina bloquean `github.io`, y entonces el navegador dice *"no se puede
+> acceder al sitio"* aunque la app esté perfecta. La de `vercel.app` es un
+> servidor distinto y casi nunca está bloqueada. Las dos se actualizan solas
+> cuando publicas.
 
 Funciona en celular, tablet y computadora. Es una sola página: **una vez que la abres la primera vez, sigue funcionando sin internet** — incluso si la cierras y la vuelves a abrir desde el ícono, sin señal.
 
@@ -18,19 +27,17 @@ Queda con su ícono y abre a pantalla completa, sin barra de navegador.
 
 ### Si no carga
 
-1. **Ábrelo con `?nuevo=1` al final.** Así:
-   `https://cznatanael.github.io/cotizador-personalizados/?nuevo=1`
-   Eso obliga al navegador a bajar la versión nueva en vez de la que tenía guardada.
-   Sirve igual en celular que en computadora, y con hacerlo **una sola vez** basta:
-   ahí queda instalado el modo sin internet y de ahí en adelante ya entras normal.
-2. **Si ya tenías el ícono en la pantalla principal, bórralo y vuelve a agregarlo**
-   después de hacer lo anterior. El ícono viejo sigue apuntando a la versión vieja.
-3. **Si no quieres hacer nada, espera 10 minutos.** La copia guardada se vence sola
-   y el navegador jala la nueva.
+1. **Prueba la otra dirección.** Si `github.io` te dice *"no se puede acceder
+   al sitio"*, tu red la está bloqueando. Usa
+   `https://cotizador-personalizados.vercel.app/` — es la misma app.
+2. **Si ya te había abierto y ahora se ve vieja, agrégale `?nuevo=1` al final.**
+   Eso obliga al navegador a bajar la versión nueva en vez de la guardada.
+   Sirve igual en celular que en computadora, y con una sola vez basta.
+3. **Si ya tenías el ícono en la pantalla principal, bórralo y vuelve a
+   agregarlo** después de lo anterior. El ícono viejo apunta a lo viejo.
 4. **Revisa la dirección: va todo en minúsculas.**
-   `cznatanael.github.io/Cotizador-Personalizados` da error 404.
-5. **Revisa que el atajo apunte a la web.** Si empieza con `file:///C:/...` estás
-   abriendo una copia local, no el sitio.
+5. **Revisa que el atajo apunte a la web.** Si empieza con `file:///C:/...`
+   estás abriendo una copia local, no el sitio.
 
 ## Qué hace
 

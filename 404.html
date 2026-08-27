@@ -5,13 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cotizador — Personalizados</title>
 <script>
-/* Cualquier direccion equivocada dentro del sitio regresa al cotizador,
-   en vez de dejar al usuario en el 404 de GitHub. */
-location.replace('/cotizador-personalizados/');
+/* Cualquier direccion equivocada regresa al cotizador, en vez de dejar al
+   usuario en una pagina de error.
+
+   El sitio vive en dos lados y la raiz no es la misma en los dos:
+     - GitHub Pages : /cotizador-personalizados/
+     - Vercel       : /
+   Por eso se calcula, en vez de dejarla fija (si no, en Vercel se ciclaria). */
+var base = location.hostname.indexOf('github.io') !== -1
+  ? '/cotizador-personalizados/'
+  : '/';
+if (location.pathname !== base) location.replace(base);
 </script>
 <style>body{font:16px/1.5 system-ui,sans-serif;margin:0;display:grid;place-items:center;min-height:100vh;background:#FBFBFD;color:#0A0A0B}a{color:#0A0A0B}</style>
 </head>
 <body>
-<p>Esa pagina no existe. <a href="/cotizador-personalizados/">Ir al cotizador</a>.</p>
+<p>Esa pagina no existe. <a href="/">Ir al cotizador</a>.</p>
 </body>
 </html>

@@ -1,0 +1,10 @@
+# Archivos que no forman parte del sitio publicado.
+_verify/
+_backup/
+node_modules/
+*.mjs
+*.md
+!index.html
+publicar.ps1
+publicar.cmd
+.git

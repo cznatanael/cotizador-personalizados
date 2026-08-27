@@ -2,7 +2,9 @@
 _verify/
 _backup/
 node_modules/
+.vercel/
 *.tmp.js
 *.tmp.mjs
 .DS_Store
 Thumbs.db
+.vercel
