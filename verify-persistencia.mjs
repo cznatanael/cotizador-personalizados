@@ -68,6 +68,11 @@ async function run() {
   await esperar(20);
   escribir($('[data-capa-nombre="1"]'), 'Frente acrílico');
   escribir($('[data-capa-field="costoHoja"][data-i="1"]'), 320);
+  // Un proceso encima: la misma pieza también se sublima.
+  click($('[data-action="proceso-add"][data-id="sublimacion"]'));
+  await esperar(20);
+  escribir($('#fp0-hojas'), 3);
+  await esperar(20);
   click($('[data-action="cant-set"][data-n="12"]'));
   await esperar(20);
   const precioSesion1 = $('#dockUnit').textContent;
@@ -107,6 +112,10 @@ async function run() {
   bien(hist[0] && hist[0].inputs.capas.length === 2, `el snapshot conserva las 2 capas (${hist[0] && hist[0].inputs.capas.length})`);
   bien(hist[0] && hist[0].inputs.capas[1].nombre === 'Frente acrílico', 'el snapshot conserva el nombre de la capa');
   bien(hist[0] && hist[0].cantidad === 12, 'el snapshot conserva la cantidad del pedido');
+  bien(hist[0] && Array.isArray(hist[0].procesos) && hist[0].procesos.length === 1,
+    `el snapshot conserva el proceso encimado (${hist[0] && hist[0].procesos && hist[0].procesos.length})`);
+  bien(hist[0] && hist[0].procesos[0].tecnica === 'sublimacion' && Number(hist[0].procesos[0].inputs.hojas) === 3,
+    'el proceso encimado conserva su técnica y sus valores');
 
   console.log('\n--- Sesión 2: los últimos valores se restauran al volver a la combinación ---');
   click2($2('[data-action="elegir-tecnica"][data-id="laser"]'));
@@ -115,8 +124,10 @@ async function run() {
   await esperar(20);
   bien($2('[data-capa-field="piezasPorHoja"][data-i="0"]').value === '8', `piezasPorHoja restaurado = ${$2('[data-capa-field="piezasPorHoja"][data-i="0"]').value}`);
   bien(parseFloat($2('[data-capa-field="costoHoja"][data-i="0"]').value) === 150, `costo de hoja restaurado = ${$2('[data-capa-field="costoHoja"][data-i="0"]').value}`);
-  bien(doc.querySelectorAll('[data-capa]').length === 2, `las 2 capas se restauran (${doc.querySelectorAll('[data-capa]').length})`);
+  bien(doc.querySelectorAll('[data-capa]:not([data-proc])').length === 2, `las 2 capas se restauran (${doc.querySelectorAll('[data-capa]:not([data-proc])').length})`);
   bien($2('[data-capa-nombre="1"]') && $2('[data-capa-nombre="1"]').value === 'Frente acrílico', 'el nombre de la capa se restaura');
+  bien(doc.querySelectorAll('[data-procwrap]').length === 1, `el proceso encimado se restaura al reabrir (${doc.querySelectorAll('[data-procwrap]').length})`);
+  bien($2('#fp0-hojas') && Number($2('#fp0-hojas').value) === 3, `el proceso encimado conserva sus 3 hojas (${$2('#fp0-hojas') && $2('#fp0-hojas').value})`);
 
   console.log('\n--- Duplicar desde el historial ---');
   click2($2('[data-action="tab"][data-id="historial"]'));
@@ -126,6 +137,7 @@ async function run() {
   bien($2('[data-action="tab"][data-id="cotizar"]').getAttribute('aria-selected') === 'true', 'Duplicar lleva de vuelta a Cotizar');
   bien($2('#f-cantidad').value === '12', `Duplicar restauró la cantidad (${$2('#f-cantidad').value})`);
   bien($2('#dockUnit').textContent === precioSesion1, `Duplicar reproduce el mismo precio (${$2('#dockUnit').textContent})`);
+  bien(doc.querySelectorAll('[data-procwrap]').length === 1, `Duplicar reconstruye el proceso encimado (${doc.querySelectorAll('[data-procwrap]').length})`);
 
   console.log('\n--- Exportar configuración ---');
   click2($2('[data-action="tab"][data-id="config"]'));

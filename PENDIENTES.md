@@ -1,5 +1,67 @@
 # Pendientes — Cotizador
 
+## RESUELTO · Varias técnicas sobre la misma pieza (multi-proceso)
+
+Reclamo del usuario, literal: *"si me piden una playera con 3 viniles, impresión 4 colores, grabado láser y vinil?"*.
+
+Las capas resolvían **varios colores de la MISMA técnica**. No resolvían el caso real: **un pedido combina técnicas distintas encimadas sobre una sola prenda**. Antes había que hacer 3 cotizaciones y sumarlas a mano — y así se cobraba el blanco 3 veces.
+
+### El estado
+
+```js
+state.cot.procesos = [ { tecnica, producto, inputs }, ... ]   // SÓLO los extra
+```
+
+El proceso principal sigue siendo `state.cot.{tecnica, producto, inputs}` sin tocar nada. Tope: `MAX_PROCESOS = 4` extras.
+
+### El motor
+
+Tres funciones nuevas, todas **antes del corte de `4. ICONOS SVG`** para que `test-calc.mjs` las alcance:
+
+- `costoDirectoDe(bd)` — materiales + máquina + mano de obra.
+- `combinarBreakdowns(partes)` — fusiona varios breakdowns en uno solo.
+- `calcularBreakdownMulti(procesos, config)` — `procesos[0]` es el principal.
+
+**Reglas de fusión, y por qué:**
+
+| Qué | Cómo | Por qué |
+|---|---|---|
+| Blanco | sólo lo cobra `procesos[0]`; a los extras se les fuerza `costoBlanco: 0` y se descarta su línea en $0 | una playera es una playera, no tres |
+| Merma | cada proceso conserva **la suya**; la combinada se recalcula `total/base − 1` | el vinil se desperdicia 8%, el papel 10% |
+| Máquina | se concatena el `detalle` | si la plancha entra dos veces son dos operaciones reales, no un duplicado |
+| Mano de obra | suma campo por campo | los minutos se acumulan de verdad |
+| Diseño | se suman los `disenoMinOriginal` y se prorratean entre las piezas | son diseños distintos |
+| Etiquetado | cada línea y cada máquina llevan `proceso` | para que el desglose diga de dónde sale cada peso |
+
+**Con un solo proceso `calcularBreakdownMulti` devuelve el breakdown tal cual, sin tocarlo.** Por eso los números canónicos (taza $110/$73/$1,752, playera vinil $375) no se movieron. Hay asserts que lo comparan bit a bit y verifican que ni siquiera aparezca la clave `procesos`.
+
+### El render: namespacing
+
+Todo el formulario asumía **un solo proceso** con IDs globales. Se generalizó con un parámetro `k`:
+
+- `k === null` → el principal. **Emite exactamente los mismos IDs y atributos de antes** (`f-<id>`, `data-fieldwrap="<id>"`, `data-capawrap="<i>-<key>"`, `#capasPanel`, `#derivado`). Por eso los ~120 asserts de UI que ya existían siguen pasando sin tocarlos.
+- `k = 0,1,2…` → proceso extra. IDs `fp<k>-<id>`, wraps `p<k>-…`, y `data-proc="<k>"` en cada control.
+
+`procDe(k)` resuelve el proceso; `procK(el)` lo lee del dataset. `onInput` y `onClick` leen `data-proc` **antes** de resolver `capaNombre` / `capaField` / `field`.
+
+> **Trampa que costó un rato:** `mats.map(campoHTML)` le pasaba el **índice del array** como segundo argumento. Se cambió a `mats.map(c => campoHTML(c))` antes de agregar el parámetro `k`.
+
+### Decisiones de alcance
+
+- **El producto de un proceso extra se deduce**: láser → `objetoCliente` (la pieza ya existe, material $0), 3D → `objetoImpresion3d`, el resto hereda el producto principal si existe en esa técnica. Sólo importa para elegir la plancha correcta.
+- **Los procesos extra no muestran el campo del blanco.** No es que valga 0 y se pueda editar: no aparece.
+- **Los procesos sobreviven al cambio de producto** (`reajustarProcesos()` reencaja la plancha), al reload (`__procesos` en `cotizador_ultimos`), al guardado (`snapshot.procesos`) y a Duplicar.
+- **Cada proceso puede tener sus propias capas.** Un láser encimado con 2 capas de material funciona.
+- El PDF muestra las técnicas concatenadas (*"Vinil textil + Sublimación + Corte y grabado láser"*) y sigue sin filtrar un solo costo.
+
+### Lo que NO se hizo
+
+- **Varias líneas de producto en un pedido** (20 playeras + 10 tazas) sigue pendiente. Es otro problema: esto es multi-*proceso* sobre UNA pieza, aquello es multi-*producto* en un pedido.
+- El slider de utilidad y el switch de comisión siguen siendo **globales del pedido**, no por proceso. Es correcto: el margen se aplica al producto terminado.
+- No hay forma de reordenar los procesos. El orden es el de captura y no afecta el precio.
+
+---
+
 ## RESUELTO · Multicolor / capas + publicación en la web
 
 Dos peticiones en una sola frase del usuario: *"necesito el cotizador primero que agregue múltiples colores o capas, después publicarlo en la página de GitHub, si no no lo puedo usar"*.

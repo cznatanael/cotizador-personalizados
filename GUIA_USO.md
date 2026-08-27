@@ -27,12 +27,13 @@ Es **una sola pantalla** y el precio se calcula **mientras escribes**. No hay pa
 
 1. Elige la **técnica** (Sublimación · Vinil · Láser · 3D) y luego el **producto**.
 2. Captura los datos. Todo viene precargado, normalmente solo tocas 2 o 3 campos.
-3. Abajo, fijo en pantalla, ves siempre **el precio por pieza** y **el total del pedido**.
-4. Ajusta la **cantidad** con los botones `−` / `+` o los atajos **1 · 6 · 12 · 24 · 50 · 100**. El descuento por volumen se aplica solo y te dice en qué tramo estás.
-5. La **barra de mercado** te muestra si tu precio quedó dentro, arriba o abajo del rango real que se cobra en México.
-6. **Desglose** abre el detalle completo: material, luz, máquina, mano de obra, indirectos, utilidad → precio final.
-7. **Guardar** → pide el nombre del cliente y lo manda al Historial.
-8. Desde el Historial: **Enviar** (arma el mensaje de WhatsApp con vigencia de 15 días), **Duplicar** (recarga esa cotización completa para modificarla) o **Desglose**.
+3. Si la pieza lleva **más de una técnica** (playera con vinil + sublimación + láser), agrégalas en **Otros procesos sobre la misma pieza**. El blanco se cobra una sola vez.
+4. Abajo, fijo en pantalla, ves siempre **el precio por pieza** y **el total del pedido**.
+5. Ajusta la **cantidad** con los botones `−` / `+` o los atajos **1 · 6 · 12 · 24 · 50 · 100**. El descuento por volumen se aplica solo y te dice en qué tramo estás.
+6. La **barra de mercado** te muestra si tu precio quedó dentro, arriba o abajo del rango real que se cobra en México.
+7. **Desglose** abre el detalle completo: material, luz, máquina, mano de obra, indirectos, utilidad → precio final.
+8. **Guardar** → pide el nombre del cliente y lo manda al Historial.
+9. Desde el Historial: **Enviar** (arma el mensaje de WhatsApp con vigencia de 15 días), **Duplicar** (recarga esa cotización completa para modificarla) o **Desglose**.
 
 ### Precio y utilidad
 
@@ -92,6 +93,37 @@ El desglose y el PDF listan cada color por su nombre, así que el cliente ve *"V
 > **Sublimación no lleva capas** y es a propósito: imprime a todo color de un solo golpe. Si el diseño ocupa más área, lo que sube es el número de **hojas**.
 >
 > **En vinil por rollo todos los colores salen al mismo precio**, porque así lo compraste. Si un color te cuesta distinto, cambia a *"por metro"* y ahí sí puedes darle su precio a cada uno.
+
+---
+
+## Varias técnicas sobre la MISMA pieza
+
+Un color extra es una cosa. Otra muy distinta es que la misma playera lleve **3 viniles, impresión a 4 tintas, grabado láser y otro vinil**. Eso ya no es un color más: son **cuatro trabajos encimados sobre una sola prenda**.
+
+Para eso está el bloque **Otros procesos sobre la misma pieza**, abajo de Tiempos.
+
+1. Cotiza normal el proceso principal (el que define el producto: la playera, el blanco, sus viniles).
+2. Baja a **Otros procesos sobre la misma pieza** y toca la técnica que se le agrega: *Sublimación*, *Láser*, *Vinil*, *Impresión 3D*.
+3. Aparece un panel numerado con **sus propios materiales, sus propias capas y sus propios tiempos**. Llénalo igual que el principal.
+4. Repite hasta 4 procesos extra.
+5. Para quitar uno, toca el bote de basura de su panel.
+
+**Lo importante: el blanco se cobra UNA sola vez.** El panel de un proceso extra ni siquiera te pregunta el costo de la prenda — ya lo cobraste arriba. Si no fuera así, una playera de $110 con tres técnicas te saldría en $330 de puro blanco y estarías cotizando de más.
+
+Lo que sí se suma de cada proceso:
+
+| Se suma | Cómo |
+|---|---|
+| Materiales | cada proceso con **su propia merma** (el vinil se desperdicia distinto que el papel) |
+| Máquina | cada máquina que interviene, aunque sea la misma plancha dos veces (son dos operaciones reales) |
+| Mano de obra | los minutos de producción se acumulan |
+| Diseño | el diseño de todos los procesos se prorratea entre las piezas del pedido |
+
+Después de sumar todo se aplican el overhead, tu utilidad, el descuento por volumen y el piso mínimo — igual que siempre.
+
+**En el desglose** aparece un bloque nuevo hasta arriba, *Procesos sobre la misma pieza*, con lo que cuesta cada uno por separado, y los materiales quedan agrupados por proceso. **En el PDF** el cliente ve las técnicas juntas (*"Vinil textil + Sublimación + Corte y grabado láser"*), sin un solo número de costo.
+
+> Al agregar **Láser** como proceso extra, el producto se pone en *"Objeto del cliente"*: la pieza ya existe, sólo la estás grabando, así que el material arranca en $0. Si además cortas material propio, agrégalo como capa dentro de ese proceso.
 
 ---
 

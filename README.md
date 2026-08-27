@@ -21,6 +21,7 @@ Queda con su ícono y abre a pantalla completa, sin barra de navegador.
 - **Precio en vivo:** cambias un dato y el precio unitario y el total se actualizan al instante.
 - **Descuento por volumen:** botones de 1 / 6 / 12 / 24 / 50 / 100 piezas con la tabla de mayoreo.
 - **Varios colores o capas:** en vinil, láser e impresión 3D puedes agregar hasta 8 colores/capas, cada uno con su medida y su precio, y el cotizador suma el material y el tiempo extra de cada uno.
+- **Varias técnicas sobre la misma pieza:** una playera con 3 viniles + sublimación + grabado láser se cotiza como **un solo producto**. Se suman materiales, máquina y tiempo de cada proceso, y **el blanco se cobra una sola vez**.
 - **Desglose completo:** de dónde sale cada peso, del costo al precio.
 - **Cotización en PDF** para mandarle al cliente, con folio y vigencia — sin enseñar tus costos ni tu margen.
 - **Historial** de lo que has cotizado, con opción de duplicar.
@@ -38,6 +39,18 @@ Todo se guarda **en tu propio navegador** (`localStorage`). No hay servidor, no 
 4. El cotizador suma el material de todos los colores y agrega el tiempo extra de cada color adicional (lo defines en *minutos por color extra*).
 
 > Sublimación no lleva capas: imprime a todo color en un solo transfer. Si el diseño ocupa más área, ajusta las **hojas**.
+
+## Cómo cotizar una pieza con varias técnicas
+
+Si la misma playera lleva vinil, sublimación y grabado láser, no son tres cotizaciones: es una.
+
+1. Cotiza normal el proceso principal (el que define el producto y su blanco).
+2. Baja a **Otros procesos sobre la misma pieza** y toca la técnica que se le agrega.
+3. Llena sus materiales, sus capas y sus tiempos en el panel que aparece. Hasta 4 procesos extra.
+
+**El blanco se cobra una sola vez.** Los procesos extra ni siquiera preguntan el costo de la prenda. Lo que sí se suma es el material de cada proceso (cada uno con su propia merma), cada máquina que interviene y todos los minutos de producción y diseño.
+
+El desglose lista lo que cuesta cada proceso por separado. El PDF del cliente sólo nombra las técnicas — nunca los costos.
 
 ## Archivos
 

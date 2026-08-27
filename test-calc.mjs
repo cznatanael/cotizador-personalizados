@@ -18,10 +18,11 @@ const motor = script.slice(0, corte);
 const API = new Function(motor + `
   return { CONFIG_DEFAULT, MERCADO_MX, costoMaquinaHora, redondeoPsicologico, obtenerRangoMayoreo,
            numOverride, breakdownSublimacion, breakdownVinil, breakdownLaser, breakdown3D,
-           calcularBreakdown, calcularCotizacion };
+           calcularBreakdown, calcularCotizacion, combinarBreakdowns, calcularBreakdownMulti, costoDirectoDe };
 `)();
 const { CONFIG_DEFAULT, costoMaquinaHora, numOverride, breakdownSublimacion,
-        breakdownVinil, breakdownLaser, breakdown3D, calcularCotizacion } = API;
+        breakdownVinil, breakdownLaser, breakdown3D, calcularCotizacion,
+        calcularBreakdown, calcularBreakdownMulti } = API;
 
 function check(label, obtenido, esperado, tol = 1) {
   const ok = Math.abs(obtenido - esperado) <= tol;
@@ -217,6 +218,107 @@ console.log('\n--- Capas / colores (vinil, láser, 3D) ---');
   todoOk &= check('láser 1 capa == ruta clásica (precio)',
     calcularCotizacion({ breakdown: l1, cantidad: 1, config: CONFIG_DEFAULT }).precioFinal,
     calcularCotizacion({ breakdown: lLeg, cantidad: 1, config: CONFIG_DEFAULT }).precioFinal, 0);
+}
+
+console.log('\n--- Varios procesos sobre la misma pieza ---');
+{
+  const cant = 1;
+  const vinilPlayera = {
+    producto: 'playera', costoBlanco: 120, vinilModo: 'metro',
+    minutosProduccion: 14, minutosPorCapaExtra: 4, minutosDisenoPedido: 20, cantidad: cant,
+    capas: [
+      { nombre: 'Vinil blanco', cm: 15, costoPorMetro: 230 },
+      { nombre: 'Vinil rojo', cm: 10, costoPorMetro: 230 },
+      { nombre: 'Vinil dorado', cm: 8, costoPorMetro: 260 }
+    ]
+  };
+  const subliEncima = {
+    producto: 'playera', costoBlanco: 120, hojaModo: 'unidad', hojas: 1, costoHojaOverride: 3.3,
+    minutosProduccion: 4, minutosDisenoPedido: 15, cantidad: cant
+  };
+  const laserEncima = {
+    producto: 'objetoCliente', costoMaterialPorPieza: 0, minutosLaser: 4,
+    minutosAcabado: 2, minutosDisenoPedido: 10, cantidad: cant
+  };
+
+  // 1) Un solo proceso debe ser idéntico bit a bit a la ruta clásica.
+  const solo = calcularBreakdownMulti([{ tecnica: 'vinil', label: 'Vinil', inputs: vinilPlayera }], CONFIG_DEFAULT);
+  const clasico = calcularBreakdown('vinil', vinilPlayera, CONFIG_DEFAULT);
+  todoOk &= check('1 proceso == ruta clásica (materiales)', solo.materiales.total, clasico.materiales.total, 0);
+  todoOk &= check('1 proceso == ruta clásica (precio)',
+    calcularCotizacion({ breakdown: solo, cantidad: cant, config: CONFIG_DEFAULT }).precioFinal,
+    calcularCotizacion({ breakdown: clasico, cantidad: cant, config: CONFIG_DEFAULT }).precioFinal, 0);
+  const sinProcs = solo.procesos === undefined;
+  console.log(`${sinProcs ? '✅' : '❌'} 1 proceso no inventa lista de procesos`);
+  todoOk &= sinProcs;
+
+  // 2) Playera con 3 viniles + sublimación 4 tintas + grabado láser.
+  const multi = calcularBreakdownMulti([
+    { tecnica: 'vinil', label: 'Vinil textil', inputs: vinilPlayera },
+    { tecnica: 'sublimacion', label: 'Sublimación', inputs: subliEncima },
+    { tecnica: 'laser', label: 'Corte y grabado láser', inputs: laserEncima }
+  ], CONFIG_DEFAULT);
+
+  const bdV = calcularBreakdown('vinil', vinilPlayera, CONFIG_DEFAULT);
+  const bdS = calcularBreakdown('sublimacion', Object.assign({}, subliEncima, { costoBlanco: 0 }), CONFIG_DEFAULT);
+  const bdL = calcularBreakdown('laser', Object.assign({}, laserEncima, { costoBlanco: 0 }), CONFIG_DEFAULT);
+
+  todoOk &= check('3 procesos: materiales = suma de los tres', multi.materiales.total,
+    bdV.materiales.total + bdS.materiales.total + bdL.materiales.total, 0);
+  todoOk &= check('3 procesos: máquina = suma de los tres', multi.maquina.total,
+    bdV.maquina.total + bdS.maquina.total + bdL.maquina.total, 0);
+  todoOk &= check('3 procesos: mano de obra = suma de los tres', multi.manoObra.total,
+    bdV.manoObra.total + bdS.manoObra.total + bdL.manoObra.total, 0);
+  todoOk &= check('3 procesos: minutos de producción se acumulan', multi.manoObra.produccionMin,
+    bdV.manoObra.produccionMin + bdS.manoObra.produccionMin + bdL.manoObra.produccionMin, 0);
+  todoOk &= check('3 procesos: la lista trae los tres', multi.procesos.length, 3, 0);
+
+  // 3) EL BLANCO SE COBRA UNA SOLA VEZ. Es el punto de todo esto.
+  const blancos = multi.materiales.lineas.filter(l => l.label.indexOf('Blanco') === 0);
+  todoOk &= check('el blanco aparece una sola vez', blancos.length, 1, 0);
+  todoOk &= check('el blanco cuesta lo que cuesta la playera', blancos[0].total, 120, 0);
+  const dobleBlanco = calcularBreakdown('vinil', vinilPlayera, CONFIG_DEFAULT).materiales.total
+    + calcularBreakdown('sublimacion', subliEncima, CONFIG_DEFAULT).materiales.total
+    + bdL.materiales.total;
+  const ahorro = dobleBlanco - multi.materiales.total;
+  const okAhorro = ahorro > 100;
+  console.log(`${okAhorro ? '✅' : '❌'} no cobrar dos veces el blanco ahorra $${ahorro.toFixed(2)} por pieza`);
+  todoOk &= okAhorro;
+
+  // 4) Cada proceso conserva SU propia merma: la combinada queda entre la menor y la mayor.
+  const mermaMezclada = multi.materiales.total / multi.materiales.base - 1;
+  const mermasIndiv = [bdV.materiales.mermaPct, bdS.materiales.mermaPct];
+  const okMerma = mermaMezclada >= Math.min.apply(null, mermasIndiv) - 1e-9
+    && mermaMezclada <= Math.max.apply(null, mermasIndiv) + 1e-9
+    && Math.abs(mermaMezclada - mermasIndiv[0]) > 1e-9;
+  console.log(`${okMerma ? '✅' : '❌'} merma combinada (${(mermaMezclada * 100).toFixed(2)}%) queda entre la de vinil (${(mermasIndiv[0] * 100).toFixed(0)}%) y la de sublimación (${(mermasIndiv[1] * 100).toFixed(0)}%)`);
+  todoOk &= okMerma;
+
+  // 5) Las líneas y las máquinas quedan etiquetadas con su proceso.
+  const etiquetadas = multi.materiales.lineas.every(l => !!l.proceso) && multi.maquina.detalle.every(d => !!d.proceso);
+  console.log(`${etiquetadas ? '✅' : '❌'} cada línea de material y máquina dice a qué proceso pertenece`);
+  todoOk &= etiquetadas;
+
+  // 6) El precio sube al agregar procesos, nunca baja.
+  const pSolo = calcularCotizacion({ breakdown: solo, cantidad: cant, config: CONFIG_DEFAULT }).precioFinal;
+  const pMulti = calcularCotizacion({ breakdown: multi, cantidad: cant, config: CONFIG_DEFAULT }).precioFinal;
+  const okSube = pMulti > pSolo;
+  console.log(`${okSube ? '✅' : '❌'} playera 3 viniles $${pSolo.toFixed(2)} → + sublimación + láser $${pMulti.toFixed(2)}`);
+  todoOk &= okSube;
+
+  // 7) Con 24 piezas el diseño de los tres procesos se prorratea igual.
+  const c24 = Object.assign({}, vinilPlayera, { cantidad: 24 });
+  const s24 = Object.assign({}, subliEncima, { cantidad: 24 });
+  const l24 = Object.assign({}, laserEncima, { cantidad: 24 });
+  const m24 = calcularBreakdownMulti([
+    { tecnica: 'vinil', label: 'Vinil textil', inputs: c24 },
+    { tecnica: 'sublimacion', label: 'Sublimación', inputs: s24 },
+    { tecnica: 'laser', label: 'Corte y grabado láser', inputs: l24 }
+  ], CONFIG_DEFAULT);
+  todoOk &= check('24 pzas: diseño total = 45 min prorrateados', m24.manoObra.disenoMinProrrateado, (20 + 15 + 10) / 24, 0.01);
+  const okBaja = calcularCotizacion({ breakdown: m24, cantidad: 24, config: CONFIG_DEFAULT }).precioFinal < pMulti;
+  console.log(`${okBaja ? '✅' : '❌'} a 24 piezas el precio por pieza baja`);
+  todoOk &= okBaja;
 }
 
 console.log('\n' + (todoOk ? '✅✅✅ TODAS LAS PRUEBAS PASAN (tolerancia ±$1)' : '❌❌❌ HAY DISCREPANCIAS — revisar arriba'));

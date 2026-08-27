@@ -22,7 +22,7 @@ const dinero = s => parseFloat(String(s).replace(/[^0-9.]/g, '')) || 0;
 const capaF = (key, i = 0) => $(`[data-capa-field="${key}"][data-i="${i}"]`);
 const capaWrap = (key, i = 0) => $(`[data-capawrap="${i}-${key}"]`);
 const capaNombre = (i = 0) => $(`[data-capa-nombre="${i}"]`);
-const nCapasDOM = () => $$('[data-capa]').length;
+const nCapasDOM = () => $$('[data-capa]:not([data-proc])').length;
 
 let ok = true;
 const bien = (cond, msg) => { console.log(`${cond ? '✅' : '❌'} ${msg}`); if (!cond) ok = false; return cond; };
@@ -277,6 +277,91 @@ if (bien(!!$('[data-action="nuevo-producto"]'), 'existe el chip para agregar un 
   const activo = $$('[data-action="elegir-producto"]').find(e => e.getAttribute('aria-pressed') === 'true');
   bien(activo && activo.textContent.trim() === 'Vaso de vidrio', 'queda seleccionado al crearlo');
   bien(dinero($('#dockUnit').textContent) > 0, `cotiza el producto propio sin romperse (${$('#dockUnit').textContent.trim()})`);
+}
+
+console.log('\n--- Varios procesos sobre la misma pieza (playera con 3 viniles + sublimación + láser) ---');
+{
+  click($('[data-action="elegir-tecnica"][data-id="vinil"]'));
+  click($('[data-action="elegir-producto"][data-id="playera"]'));
+  while (nCapasDOM() > 1) click($('[data-capa="1"] [data-action="capa-del"]'));
+
+  bien(!!$('[data-action="proceso-add"]'), 'existe el botón para agregar otro proceso a la misma pieza');
+  const soloVinil = dinero($('#dockUnit').textContent);
+
+  // Los 3 viniles.
+  click($('[data-action="capa-add"]'));
+  click($('[data-action="capa-add"]'));
+  bien(nCapasDOM() === 3, `la playera lleva 3 viniles (${nCapasDOM()})`);
+  escribir(capaNombre(0), 'Blanco');
+  escribir(capaNombre(1), 'Rojo');
+  escribir(capaNombre(2), 'Dorado');
+  const tresViniles = dinero($('#dockUnit').textContent);
+  bien(tresViniles > soloVinil, `3 viniles cuestan más que 1 ($${soloVinil} → $${tresViniles})`);
+
+  // Encima va la sublimación.
+  click($('[data-action="proceso-add"][data-id="sublimacion"]'));
+  bien($$('[data-procwrap]').length === 1, 'aparece el panel del proceso de sublimación');
+  bien(/Sublimaci/i.test($('[data-procwrap="0"]').textContent), 'el panel dice qué técnica es');
+  bien(!$('[data-fieldwrap="p0-costoBlanco"]'), 'el proceso extra NO vuelve a pedir el costo del blanco');
+  bien(!!$('#fp0-hojas'), 'el proceso extra sí pide sus propias hojas de transfer');
+  bien(!!$('#f-costoBlanco'), 'el proceso principal sigue pidiendo el blanco');
+  const conSubli = dinero($('#dockUnit').textContent);
+  bien(conSubli > tresViniles, `sublimar encima sube el precio ($${tresViniles} → $${conSubli})`);
+
+  // Y el grabado láser.
+  click($('[data-action="proceso-add"][data-id="laser"]'));
+  bien($$('[data-procwrap]').length === 2, 'ya son 2 procesos encima del vinil');
+  bien(!!$('#fp1-minutosAcabado') || !!$('[data-fieldwrap^="p1-"]'), 'el segundo proceso extra tiene sus propios campos');
+  const conLaser = dinero($('#dockUnit').textContent);
+  bien(conLaser > conSubli, `el grabado láser sube el precio ($${conSubli} → $${conLaser})`);
+  bien(/3 procesos/.test($('#procCount').textContent), `el contador dice 3 procesos (${$('#procCount').textContent.trim()})`);
+
+  // Editar un campo del proceso extra recalcula, y no toca al principal.
+  const hojasExtra = $('#fp0-hojas');
+  const antesHojas = dinero($('#dockUnit').textContent);
+  escribir(hojasExtra, 4);
+  bien(dinero($('#dockUnit').textContent) > antesHojas, 'subir las hojas del proceso extra sube el precio');
+  escribir(hojasExtra, 1);
+
+  // El proceso extra puede llevar sus propias capas sin tocar las del principal.
+  const addExtra = $('[data-procwrap="1"] [data-action="capa-add"]');
+  if (bien(!!addExtra, 'el proceso de láser trae su propio bloque de capas')) {
+    click(addExtra);
+    bien($$('[data-capa][data-proc="1"]').length === 2, 'el láser encimado ya tiene 2 capas propias');
+    bien(nCapasDOM() === 3, 'las 3 capas de vinil del principal siguen intactas');
+    click($('[data-capa="p1-1"] [data-action="capa-del"]'));
+    bien($$('[data-capa][data-proc="1"]').length === 1, 'se puede quitar una capa del proceso extra');
+  }
+
+  // El desglose tiene que decir de dónde sale cada peso.
+  click($('[data-action="ver-desglose"]'));
+  const bodyTxt = $('#sheetBody').textContent;
+  bien(/Procesos sobre la misma pieza/.test(bodyTxt), 'el desglose lista los procesos');
+  bien(/blanco se cobra una sola vez/i.test(bodyTxt), 'el desglose aclara que el blanco se cobra una vez');
+  bien((bodyTxt.match(/Blanco \(producto base\)/g) || []).length === 1, 'el blanco aparece UNA sola vez en el desglose');
+  click($('[data-action="cerrar-sheet"]'));
+
+  // Y el PDF del cliente debe nombrar las tres técnicas, sin filtrar costos.
+  window.print = () => { window.__imprimio = (window.__imprimio || 0) + 1; };
+  click($('[data-action="pdf-cot"]'));
+  escribir($('#f-clientePdf'), 'Cliente multi');
+  click($('[data-action="confirmar-pdf"]'));
+  {
+    const t = $('#printDoc').textContent.replace(/\s+/g, ' ');
+    bien(/Vinil/.test(t) && /Sublimaci/i.test(t) && /[Ll]áser/i.test(t), `el PDF nombra las tres técnicas (${(t.match(/Vinil[^·]*·[^·]*·[^·]*/) || [''])[0].trim()})`);
+    const fugas = ['costo', 'utilidad', 'margen', 'merma', 'overhead'].filter(k => t.toLowerCase().includes(k));
+    bien(fugas.length === 0, `el PDF con varios procesos sigue sin filtrar costos (${fugas.join(', ') || 'limpio'})`);
+  }
+  click($('[data-action="cerrar-sheet"]'));
+
+  // Quitar procesos devuelve el precio a donde estaba.
+  click($('[data-action="proceso-del"][data-proc="1"]'));
+  bien($$('[data-procwrap]').length === 1, 'se puede quitar un proceso');
+  click($('[data-action="proceso-del"][data-proc="0"]'));
+  bien($$('[data-procwrap]').length === 0, 'se pueden quitar todos los procesos extra');
+  bien(Math.abs(dinero($('#dockUnit').textContent) - tresViniles) < 0.01,
+    `al quitarlos el precio vuelve al de los 3 viniles ($${dinero($('#dockUnit').textContent)})`);
+  while (nCapasDOM() > 1) click($('[data-capa="1"] [data-action="capa-del"]'));
 }
 
 console.log('\n--- Desglose y guardado ---');

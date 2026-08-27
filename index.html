@@ -264,6 +264,30 @@ input,select,textarea{font:inherit; color:inherit}
 .capa__add:hover{background:var(--surface-2)}
 .capas__hint{margin:8px 2px 0; font-size:12.5px; color:var(--ink-3); line-height:1.45}
 
+/* ============ PROCESOS (varias técnicas sobre la misma pieza) ============ */
+.proc{
+  background:var(--surface); border:1px solid var(--line);
+  border-left:3px solid var(--focus); border-radius:var(--r-md);
+  overflow:hidden; margin-bottom:10px;
+}
+.proc__hd{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line-2); background:var(--surface-2)}
+.proc__n{
+  display:grid; place-items:center; width:22px; height:22px; flex:none; border-radius:999px;
+  background:var(--focus); color:#fff; font-size:11.5px; font-weight:700;
+}
+.proc__t{flex:1; min-width:0; font-size:14.5px; font-weight:600; line-height:1.25}
+.proc__t small{display:block; font-size:11.5px; font-weight:450; color:var(--ink-3); margin-top:2px}
+.proc__st{
+  padding:11px 16px 5px; font-size:11.5px; font-weight:600;
+  letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3);
+}
+.proc__hint{margin:0 0 10px; font-size:12.5px; color:var(--ink-3); line-height:1.45}
+.proc .capa{border-top:1px solid var(--line-2)}
+.bd-sub{
+  margin:10px 0 4px; font-size:11.5px; font-weight:600;
+  letter-spacing:.05em; text-transform:uppercase; color:var(--focus);
+}
+
 /* ============ STEPPER ============ */
 .stepper{display:flex; align-items:center; gap:10px}
 .stepper__b{
@@ -806,6 +830,60 @@ function calcularBreakdown(tecnica, inputs, config) {
   throw new Error('Técnica desconocida: ' + tecnica);
 }
 
+function costoDirectoDe(bd) { return bd.materiales.total + bd.maquina.total + bd.manoObra.total; }
+
+/* Varios procesos sobre la MISMA pieza: una playera con 3 viniles, sublimación
+   a 4 tintas y grabado láser es UN producto, no tres cotizaciones.
+   El blanco (la prenda) lo cobra sólo el proceso principal; los demás llegan con
+   costoBlanco 0 para no cobrarlo dos y tres veces. Cada proceso conserva su
+   propia merma, sus máquinas y su tiempo, y todo se suma antes del overhead. */
+function combinarBreakdowns(partes) {
+  const materialesBase = partes.reduce((a, p) => a + p.breakdown.materiales.base, 0);
+  const materialesTotal = partes.reduce((a, p) => a + p.breakdown.materiales.total, 0);
+  const lineas = [];
+  const detalle = [];
+  const mo = { produccionMin: 0, costoProduccion: 0, disenoMinOriginal: 0, disenoMinProrrateado: 0, costoDiseno: 0, total: 0 };
+  partes.forEach((p, k) => {
+    for (const l of p.breakdown.materiales.lineas) {
+      // El blanco de los procesos extra viene en 0: mostrarlo confundiría.
+      if (k > 0 && l.total === 0 && l.label.indexOf('Blanco') === 0) continue;
+      lineas.push(Object.assign({}, l, { proceso: p.label }));
+    }
+    for (const d of p.breakdown.maquina.detalle) detalle.push(Object.assign({}, d, { proceso: p.label }));
+    const m = p.breakdown.manoObra;
+    mo.produccionMin += m.produccionMin;
+    mo.costoProduccion += m.costoProduccion;
+    mo.disenoMinOriginal += m.disenoMinOriginal;
+    mo.disenoMinProrrateado += m.disenoMinProrrateado;
+    mo.costoDiseno += m.costoDiseno;
+    mo.total += m.total;
+  });
+  return {
+    procesos: partes.map(p => ({ tecnica: p.tecnica, label: p.label, costo: costoDirectoDe(p.breakdown) })),
+    capas: partes[0].breakdown.capas,
+    tipoVinil: partes[0].breakdown.tipoVinil,
+    materiales: {
+      base: materialesBase,
+      mermaPct: materialesBase > 0 ? (materialesTotal / materialesBase - 1) : 0,
+      total: materialesTotal, lineas
+    },
+    maquina: { total: partes.reduce((a, p) => a + p.breakdown.maquina.total, 0), detalle },
+    manoObra: mo
+  };
+}
+
+/* `procesos[0]` es el principal (el que trae el blanco). Con uno solo devuelve
+   el breakdown tal cual, así que las cotizaciones de siempre no cambian ni un peso. */
+function calcularBreakdownMulti(procesos, config) {
+  const partes = procesos.map((p, k) => ({
+    tecnica: p.tecnica,
+    label: p.label || p.tecnica,
+    breakdown: calcularBreakdown(p.tecnica, k === 0 ? p.inputs : Object.assign({}, p.inputs, { costoBlanco: 0 }), config)
+  }));
+  if (partes.length === 1) return partes[0].breakdown;
+  return combinarBreakdowns(partes);
+}
+
 function calcularCotizacion({ breakdown, cantidad, config, utilidadMenudeoPctOverride, aplicaComisionOverride }) {
   const g = config.configGlobal;
   const costoDirecto = breakdown.materiales.total + breakdown.maquina.total + breakdown.manoObra.total;
@@ -1034,6 +1112,7 @@ const state = {
     tecnica: 'sublimacion',
     producto: 'taza',
     inputs: {},
+    procesos: [],
     utilidadOverride: null,
     aplicaComision: null,
     snapshot: null
@@ -1225,6 +1304,73 @@ function gramosTotales() {
   return Number(state.cot.inputs.gramos) || 0;
 }
 
+/* ============ 11c. PROCESOS SOBRE LA MISMA PIEZA ============
+   Un pedido real combina técnicas: playera con 3 viniles + sublimación a 4
+   tintas + grabado láser. El proceso 0 es el principal (define el producto y
+   carga el costo del blanco); `state.cot.procesos` guarda los que van encima. */
+const MAX_PROCESOS = 4;
+
+function procesosExtra() { return state.cot.procesos || (state.cot.procesos = []); }
+function numProcesos() { return 1 + procesosExtra().length; }
+
+/* k === null → el principal; k = 0,1,2… → el proceso extra correspondiente. */
+function procDe(k) {
+  if (k === null || k === undefined || k === '') {
+    return { tecnica: state.cot.tecnica, producto: state.cot.producto, inputs: state.cot.inputs };
+  }
+  return procesosExtra()[Number(k)];
+}
+function procK(el) {
+  const v = el.dataset ? el.dataset.proc : undefined;
+  return (v === undefined || v === '') ? null : Number(v);
+}
+
+/* Qué producto usa un proceso extra. Importa sólo para elegir la plancha y el
+   tipo de vinil: el blanco ya lo cobró el principal. */
+function productoParaProceso(tecnica, productoPrincipal) {
+  if (tecnica === 'laser') return 'objetoCliente';
+  if (tecnica === 'impresion3d') return 'objetoImpresion3d';
+  return buscarProducto(tecnica, productoPrincipal) ? productoPrincipal : PRODUCTOS[tecnica][0].id;
+}
+
+function procesoNuevo(tecnica, previos) {
+  const producto = productoParaProceso(tecnica, state.cot.producto);
+  const inputs = defaultsFormulario(tecnica, producto, previos || {});
+  inputs.costoBlanco = 0;   // la pieza ya se cobró en el proceso principal
+  return { tecnica, producto, inputs };
+}
+
+/* Campos visibles de un proceso extra: sin el blanco, que ya está cobrado. */
+function camposDeProceso(k) {
+  const p = procDe(k);
+  const campos = camposFormulario(p.tecnica, p.producto, p.inputs);
+  return k === null ? campos : campos.filter(c => c.id !== 'costoBlanco');
+}
+
+/* Reencaja los procesos extra cuando cambia el producto principal (la plancha
+   de una gorra no es la de una playera). */
+function reajustarProcesos() {
+  procesosExtra().forEach(p => {
+    const prodNuevo = productoParaProceso(p.tecnica, state.cot.producto);
+    if (prodNuevo === p.producto) return;
+    p.producto = prodNuevo;
+    p.inputs = defaultsFormulario(p.tecnica, prodNuevo, p.inputs);
+    p.inputs.costoBlanco = 0;
+  });
+}
+
+/* Lista lista para el motor: principal + extras, cada uno ya traducido. */
+function procesosParaMotor() {
+  const lista = [{ tecnica: state.cot.tecnica, label: etiquetaProceso(null), inputs: inputsParaMotor(null) }];
+  procesosExtra().forEach((p, k) => lista.push({ tecnica: p.tecnica, label: etiquetaProceso(k), inputs: inputsParaMotor(k) }));
+  return lista;
+}
+function etiquetaProceso(k) {
+  const p = procDe(k);
+  const t = buscarTecnica(p.tecnica);
+  return t ? t.label : p.tecnica;
+}
+
 /* Valor por defecto de un campo: `value` explícito o el valor vivo de configuración. */
 function valorDefaultCampo(c) {
   if (c.value !== undefined) return c.value;
@@ -1251,8 +1397,9 @@ function defaultsFormulario(tecnica, producto, previos) {
 /* Traduce los inputs de la UI a los inputs que espera el motor.
    Aquí se convierte lo que el usuario COMPRA (paquete, rollo, hoja) a la unidad
    que necesita el cálculo (hoja, metro, pieza). */
-function inputsParaMotor() {
-  const { tecnica, producto, inputs } = state.cot;
+function inputsParaMotor(k) {
+  const pr = procDe(k);
+  const tecnica = pr.tecnica, producto = pr.producto, inputs = pr.inputs;
   const cantidad = Math.max(1, parseInt(state.cot.cantidad, 10) || 1);
   const prod = buscarProducto(tecnica, producto) || {};
   const out = Object.assign({}, inputs, { producto, cantidad });
@@ -1321,9 +1468,10 @@ function inputsParaMotor() {
 }
 
 /* Costo por unidad ya derivado, para mostrarlo en vivo bajo los campos de compra. */
-function derivadoCompra() {
-  const { tecnica, inputs } = state.cot;
-  const m = inputsParaMotor();
+function derivadoCompra(k) {
+  const pr = procDe(k);
+  const tecnica = pr.tecnica, inputs = pr.inputs;
+  const m = inputsParaMotor(k);
   if (tecnica === 'laser') return { label: 'Material por pieza', valor: m.costoMaterialPorPieza };
   if (tecnica === 'sublimacion' && inputs.hojaModo === 'paquete') return { label: 'Sale cada hoja en', valor: m.costoHojaOverride };
   if (tecnica === 'vinil' && inputs.vinilModo === 'rollo') return { label: 'Sale el metro en', valor: m.costoPorMetroVinil };
@@ -1331,41 +1479,58 @@ function derivadoCompra() {
   return null;
 }
 
-/* Campos que tienen override activo (difieren de la configuración), incluidas las capas. */
+/* Campos con override activo (difieren de la configuración), en todos los procesos. */
 function overridesActivos() {
-  const campos = camposFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
-  const lista = campos.filter(c => c.configPath && !casiIgual(state.cot.inputs[c.id], getPath(state.config, c.configPath)));
-  const esp = especCapas(state.cot.tecnica, state.cot.producto, state.cot.inputs);
-  if (esp) {
-    const capas = state.cot.inputs.capas || [];
+  const lista = [];
+  const revisar = (k) => {
+    const pr = procDe(k);
+    const pref = k === null ? '' : 'p' + k + '.';
+    const campos = camposFormulario(pr.tecnica, pr.producto, pr.inputs);
+    for (const c of campos) {
+      if (c.configPath && !casiIgual(pr.inputs[c.id], getPath(state.config, c.configPath))) lista.push({ id: pref + c.id, configPath: c.configPath });
+    }
+    const esp = especCapas(pr.tecnica, pr.producto, pr.inputs);
+    if (!esp) return;
+    const capas = pr.inputs.capas || [];
     for (const f of esp.campos) {
       if (!f.configPath) continue;
       const cfg = getPath(state.config, f.configPath);
-      capas.forEach((c, i) => { if (!casiIgual(c[f.key], cfg)) lista.push({ id: 'capa' + i + '.' + f.key, configPath: f.configPath }); });
+      capas.forEach((c, i) => { if (!casiIgual(c[f.key], cfg)) lista.push({ id: pref + 'capa' + i + '.' + f.key, configPath: f.configPath }); });
     }
-  }
+  };
+  revisar(null);
+  procesosExtra().forEach((_, k) => revisar(k));
   return lista;
 }
-/* ============ 12. RENDER DE CAMPOS ============ */
-function campoHTML(c) {
+/* ============ 12. RENDER DE CAMPOS ============
+   `k` identifica el proceso: null = el principal (ids de siempre: f-xxx),
+   0,1,2… = un proceso extra (ids fp0-xxx y data-proc="0"). */
+function idCampo(id, k) { return k === null ? 'f-' + id : 'fp' + k + '-' + id; }
+function claveWrap(id, k) { return k === null ? id : 'p' + k + '-' + id; }
+function attrProc(k) { return k === null ? '' : ' data-proc="' + k + '"'; }
+
+function campoHTML(c, k) {
+  if (k === undefined) k = null;
+  const inputs = procDe(k).inputs;
   const f = c.factor || 1;
-  const raw = state.cot.inputs[c.id];
+  const raw = inputs[c.id];
   // `factor` = cuántas unidades base trae la unidad de compra (1 kg = 1000 g).
   // Se guarda siempre en la unidad base; sólo se MUESTRA en la de compra.
   const val = f !== 1 && raw !== '' && raw !== undefined && raw !== null ? Math.round(Number(raw) * f * 1e6) / 1e6 : raw;
   const cfgValBase = c.configPath ? getPath(state.config, c.configPath) : null;
   const cfgVal = c.configPath && f !== 1 ? Math.round(cfgValBase * f * 1e6) / 1e6 : cfgValBase;
   const isOv = !!c.configPath && !casiIgual(raw, cfgValBase);
+  const eid = idCampo(c.id, k);
   let ctl;
   if (c.type === 'select') {
-    ctl = '<div class="inbox inbox--sel"><select id="f-' + c.id + '" data-field="' + c.id + '" data-type="select">' +
+    ctl = '<div class="inbox inbox--sel"><select id="' + eid + '" data-field="' + c.id + '"' + attrProc(k) + ' data-type="select">' +
       c.options.map(o => '<option value="' + escapeHtml(o.value) + '"' + (String(val) === String(o.value) ? ' selected' : '') + '>' + escapeHtml(o.label) + '</option>').join('') +
       '</select></div>';
   } else {
     const mode = c.type === 'int' ? 'numeric' : 'decimal';
     ctl = '<div class="inbox">' +
       (c.prefix ? '<span class="inbox__fix">' + escapeHtml(c.prefix) + '</span>' : '') +
-      '<input id="f-' + c.id + '" data-field="' + c.id + '" data-type="' + c.type + '" data-factor="' + f + '" type="number" inputmode="' + mode + '"' +
+      '<input id="' + eid + '" data-field="' + c.id + '"' + attrProc(k) + ' data-type="' + c.type + '" data-factor="' + f + '" type="number" inputmode="' + mode + '"' +
       (c.min !== undefined ? ' min="' + c.min + '"' : '') + (c.step ? ' step="' + c.step + '"' : '') +
       ' value="' + escapeHtml(val) + '">' +
       (c.suffix ? '<span class="inbox__fix">' + escapeHtml(c.suffix) + '</span>' : '') +
@@ -1374,11 +1539,11 @@ function campoHTML(c) {
   let meta = '';
   if (c.configPath) {
     meta = '<div class="field__meta"><span>Config: ' + formatMXN(cfgVal) + '</span>' +
-      (isOv ? '<button class="linkbtn" data-action="reset-campo" data-id="' + c.id + '">Restablecer</button><span class="badge badge--i">' + ico('bolt', 13) + 'Solo esta cotización</span>' : '') +
+      (isOv ? '<button class="linkbtn" data-action="reset-campo" data-id="' + c.id + '"' + attrProc(k) + '>Restablecer</button><span class="badge badge--i">' + ico('bolt', 13) + 'Solo esta cotización</span>' : '') +
       '</div>';
   }
-  return '<div class="field' + (isOv ? ' is-overridden' : '') + '" data-fieldwrap="' + c.id + '">' +
-    '<div class="field__top"><label class="field__lbl" for="f-' + c.id + '">' + escapeHtml(c.label) + '</label></div>' +
+  return '<div class="field' + (isOv ? ' is-overridden' : '') + '" data-fieldwrap="' + claveWrap(c.id, k) + '">' +
+    '<div class="field__top"><label class="field__lbl" for="' + eid + '">' + escapeHtml(c.label) + '</label></div>' +
     '<div class="field__ctl">' + ctl + '</div>' +
     (c.hint ? '<p class="field__hint">' + escapeHtml(c.hint) + '</p>' : '') + meta +
     '</div>';
@@ -1387,23 +1552,30 @@ function campoHTML(c) {
 function derivadoFila(label, valor) {
   return '<div class="derived"><span>' + escapeHtml(label) + '</span><b>' + valor + '</b></div>';
 }
-function derivadoLaserHTML() {
+function derivadoLaserHTML(k) {
+  if (k === undefined) k = null;
+  const pr = procDe(k);
+  if (!pr) return '';
   const filas = [];
-  const d = derivadoCompra();
+  const d = derivadoCompra(k);
   if (d) filas.push(derivadoFila(d.label, d.valor >= 1 ? formatMXN(d.valor) : '$' + formatNum(d.valor, 4)));
-  const bd = state.cot.resultado && state.cot.resultado.breakdown;
-  if (bd && bd.capas && bd.capas.n > 1) {
-    const esp = especCapas(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+  const n = numCapas(pr.inputs);
+  if (n > 1) {
+    const esp = especCapas(pr.tecnica, pr.producto, pr.inputs);
     const plural = esp ? esp.plural : 'capas';
-    filas.push(derivadoFila('Material de ' + bd.capas.n + ' ' + plural, formatMXN(bd.capas.materialTotal)));
-    if (bd.capas.minutosExtra > 0) filas.push(derivadoFila('Tiempo extra por ' + plural, '+' + formatNum(bd.capas.minutosExtra, 0) + ' min'));
+    let cap = null;
+    try { cap = calcularBreakdown(pr.tecnica, inputsParaMotor(k), state.config).capas; } catch (e) { cap = null; }
+    if (cap) {
+      filas.push(derivadoFila('Material de ' + cap.n + ' ' + plural, formatMXN(cap.materialTotal)));
+      if (cap.minutosExtra > 0) filas.push(derivadoFila('Tiempo extra por ' + plural, '+' + formatNum(cap.minutosExtra, 0) + ' min'));
+    }
   }
   if (!filas.length) return '';
   return '<div style="padding:0 16px 14px">' + filas.join('') + '</div>';
 }
 
 /* ---- Capas / colores ---- */
-function campoCapaHTML(f, capa, i) {
+function campoCapaHTML(f, capa, i, k) {
   const fac = f.factor || 1;
   const raw = capa[f.key];
   // Igual que en los campos normales: se guarda en unidad base, se muestra en unidad de compra.
@@ -1411,11 +1583,11 @@ function campoCapaHTML(f, capa, i) {
   const cfgBase = f.configPath ? getPath(state.config, f.configPath) : null;
   const isOv = !!f.configPath && !casiIgual(raw, cfgBase);
   const mode = f.type === 'int' ? 'numeric' : 'decimal';
-  return '<label class="capa__f' + (isOv ? ' is-overridden' : '') + '" data-capawrap="' + i + '-' + f.key + '">' +
+  return '<label class="capa__f' + (isOv ? ' is-overridden' : '') + '" data-capawrap="' + claveWrap(i + '-' + f.key, k) + '">' +
     '<span>' + escapeHtml(f.label) + '</span>' +
     '<div class="inbox">' +
     (f.prefix ? '<span class="inbox__fix">' + escapeHtml(f.prefix) + '</span>' : '') +
-    '<input data-capa-field="' + f.key + '" data-i="' + i + '" data-type="' + f.type + '" data-factor="' + fac + '" type="number" inputmode="' + mode + '"' +
+    '<input data-capa-field="' + f.key + '" data-i="' + i + '"' + attrProc(k) + ' data-type="' + f.type + '" data-factor="' + fac + '" type="number" inputmode="' + mode + '"' +
     (f.min !== undefined ? ' min="' + f.min + '"' : '') + (f.step ? ' step="' + f.step + '"' : '') +
     ' value="' + escapeHtml(val) + '">' +
     (f.suffix ? '<span class="inbox__fix">' + escapeHtml(f.suffix) + '</span>' : '') +
@@ -1424,41 +1596,53 @@ function campoCapaHTML(f, capa, i) {
     '</label>';
 }
 
+/* Sólo los renglones: los reusan el panel principal y los procesos extra. */
+function capasFilasHTML(esp, k) {
+  const capas = procDe(k).inputs.capas || [];
+  return capas.map((c, i) =>
+    '<div class="capa" data-capa="' + claveWrap(String(i), k) + '"' + attrProc(k) + '>' +
+    '<div class="capa__hd">' +
+    '<span class="capa__n">' + (i + 1) + '</span>' +
+    '<input class="capa__name" type="text" data-capa-nombre="' + i + '"' + attrProc(k) + ' value="' + escapeHtml(c.nombre || '') + '" placeholder="' + escapeHtml(esp.placeholder) + '" aria-label="Nombre de ' + escapeHtml(esp.singular) + ' ' + (i + 1) + '">' +
+    (capas.length > 1 ? '<button class="capa__del" data-action="capa-del" data-i="' + i + '"' + attrProc(k) + ' aria-label="Quitar ' + escapeHtml(esp.singular) + ' ' + (i + 1) + '">' + ico('trash', 17) + '</button>' : '') +
+    '</div>' +
+    '<div class="capa__grid">' + esp.campos.map(f => campoCapaHTML(f, c, i, k)).join('') + '</div>' +
+    '</div>'
+  ).join('');
+}
+function capasAltaHTML(esp, k) {
+  const capas = procDe(k).inputs.capas || [];
+  if (capas.length >= MAX_CAPAS) return '';
+  return '<button class="capa__add" data-action="capa-add"' + attrProc(k) + '>' + ico('plus', 16) + escapeHtml(esp.alta) + '</button>';
+}
+
 function capasHTML() {
   const esp = especCapas(state.cot.tecnica, state.cot.producto, state.cot.inputs);
   if (!esp) return '';
   const capas = state.cot.inputs.capas || [];
-  const filas = capas.map((c, i) =>
-    '<div class="capa" data-capa="' + i + '">' +
-    '<div class="capa__hd">' +
-    '<span class="capa__n">' + (i + 1) + '</span>' +
-    '<input class="capa__name" type="text" data-capa-nombre="' + i + '" value="' + escapeHtml(c.nombre || '') + '" placeholder="' + escapeHtml(esp.placeholder) + '" aria-label="Nombre de ' + escapeHtml(esp.singular) + ' ' + (i + 1) + '">' +
-    (capas.length > 1 ? '<button class="capa__del" data-action="capa-del" data-i="' + i + '" aria-label="Quitar ' + escapeHtml(esp.singular) + ' ' + (i + 1) + '">' + ico('trash', 17) + '</button>' : '') +
-    '</div>' +
-    '<div class="capa__grid">' + esp.campos.map(f => campoCapaHTML(f, c, i)).join('') + '</div>' +
-    '</div>'
-  ).join('');
   return '<div class="sec">' +
     '<div class="sec__hd"><span class="sec__t">' + escapeHtml(esp.titulo) + '</span>' +
     '<span class="sec__aside" id="capasCount">' + capas.length + ' ' + escapeHtml(capas.length === 1 ? esp.singular : esp.plural) + '</span></div>' +
-    '<div class="panel" id="capasPanel">' + filas +
-    '<div id="derivado">' + derivadoLaserHTML() + '</div>' +
-    (capas.length < MAX_CAPAS ? '<button class="capa__add" data-action="capa-add">' + ico('plus', 16) + escapeHtml(esp.alta) + '</button>' : '') +
+    '<div class="panel" id="capasPanel">' + capasFilasHTML(esp, null) +
+    '<div id="derivado">' + derivadoLaserHTML(null) + '</div>' +
+    capasAltaHTML(esp, null) +
     '</div>' +
     (esp.ayuda ? '<p class="capas__hint">' + escapeHtml(esp.ayuda) + '</p>' : '') +
     '</div>';
 }
 
 /* Refresca el aviso de override de una capa sin tocar su input (conserva el foco). */
-function refrescarMetaCapa(i, key) {
-  const esp = especCapas(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+function refrescarMetaCapa(i, key, k) {
+  if (k === undefined) k = null;
+  const pr = procDe(k);
+  const esp = especCapas(pr.tecnica, pr.producto, pr.inputs);
   if (!esp) return;
   const f = esp.campos.find(x => x.key === key);
   if (!f || !f.configPath) return;
-  const wrap = document.querySelector('[data-capawrap="' + i + '-' + key + '"]');
+  const wrap = document.querySelector('[data-capawrap="' + claveWrap(i + '-' + key, k) + '"]');
   if (!wrap) return;
   const cfgBase = getPath(state.config, f.configPath);
-  const isOv = !casiIgual((state.cot.inputs.capas[i] || {})[key], cfgBase);
+  const isOv = !casiIgual((pr.inputs.capas[i] || {})[key], cfgBase);
   wrap.classList.toggle('is-overridden', isOv);
   const cfg = wrap.querySelector('.capa__cfg');
   if (cfg) cfg.textContent = 'Config: ' + formatMXN(cfgBase * (f.factor || 1)) + (isOv ? ' · ajustado' : '');
@@ -1504,9 +1688,47 @@ function comisionActiva() {
     ? !!state.config.configGlobal.aplicaComisionVentaOnline : !!state.cot.aplicaComision;
 }
 function calcularAhora() {
-  const m = inputsParaMotor();
-  const bd = calcularBreakdown(state.cot.tecnica, m, state.config);
-  return calcularCotizacion({ breakdown: bd, cantidad: m.cantidad, config: state.config, utilidadMenudeoPctOverride: utilidadActual(), aplicaComisionOverride: comisionActiva() });
+  const cantidad = Math.max(1, parseInt(state.cot.cantidad, 10) || 1);
+  const bd = calcularBreakdownMulti(procesosParaMotor(), state.config);
+  return calcularCotizacion({ breakdown: bd, cantidad, config: state.config, utilidadMenudeoPctOverride: utilidadActual(), aplicaComisionOverride: comisionActiva() });
+}
+
+/* Panel de un proceso extra: sus materiales, sus capas y sus tiempos. */
+function procesoHTML(k) {
+  const p = procesosExtra()[k];
+  const campos = camposDeProceso(k);
+  const mats = campos.filter(c => c.group === 'material');
+  const tiempos = campos.filter(c => c.group === 'tiempo');
+  const esp = especCapas(p.tecnica, p.producto, p.inputs);
+  const prod = buscarProducto(p.tecnica, p.producto);
+  return '<div class="proc" data-procwrap="' + k + '">' +
+    '<div class="proc__hd">' +
+    '<span class="proc__n">' + (k + 2) + '</span>' +
+    '<span class="proc__t">' + escapeHtml(etiquetaProceso(k)) + '<small>' + escapeHtml(prod ? prod.label : '') + ' · encima de la misma pieza</small></span>' +
+    '<button class="capa__del" data-action="proceso-del" data-proc="' + k + '" aria-label="Quitar este proceso">' + ico('trash', 17) + '</button>' +
+    '</div>' +
+    '<div class="proc__bd">' +
+    '<div class="proc__st">Materiales</div>' +
+    '<div class="fields">' + mats.map(c => campoHTML(c, k)).join('') + '</div>' +
+    (esp ? '<div class="proc__st">' + escapeHtml(esp.titulo) + '</div>' + capasFilasHTML(esp, k) + capasAltaHTML(esp, k) : '') +
+    '<div data-derivado="' + k + '">' + derivadoLaserHTML(k) + '</div>' +
+    '<div class="proc__st">Tiempos</div>' +
+    '<div class="fields">' + tiempos.map(c => campoHTML(c, k)).join('') + '</div>' +
+    '</div></div>';
+}
+
+function procesosSecHTML() {
+  const extra = procesosExtra();
+  const disponibles = TECNICAS.filter(t => extra.length < MAX_PROCESOS);
+  return '<div class="sec">' +
+    '<div class="sec__hd"><span class="sec__t">Otros procesos sobre la misma pieza</span>' +
+    '<span class="sec__aside" id="procCount">' + numProcesos() + ' proceso' + (numProcesos() > 1 ? 's' : '') + '</span></div>' +
+    (extra.length ? '<div id="procesosPanel">' + extra.map((_, k) => procesoHTML(k)).join('') + '</div>' : '<div id="procesosPanel"></div>') +
+    (disponibles.length
+      ? '<div class="panel panel--pad"><p class="proc__hint">Si la misma playera lleva vinil, sublimación y grabado láser, agrégalos aquí: el blanco se cobra una sola vez y se suman materiales, máquina y tiempo.</p>' +
+      '<div class="chips">' + disponibles.map(t => '<button class="chip chip--add" data-action="proceso-add" data-id="' + t.id + '">' + ico('plus', 15) + escapeHtml(t.label) + '</button>').join('') + '</div></div>'
+      : '<div class="panel panel--pad"><p class="proc__hint">Llegaste al máximo de ' + MAX_PROCESOS + ' procesos extra.</p></div>') +
+    '</div>';
 }
 
 function renderCotizar() {
@@ -1545,13 +1767,15 @@ function renderCotizar() {
     '</div></div></div>' +
 
     '<div class="sec"><div class="sec__hd"><span class="sec__t">Materiales</span></div>' +
-    '<div class="panel"><div class="fields">' + mats.map(campoHTML).join('') + '</div>' +
+    '<div class="panel"><div class="fields">' + mats.map(c => campoHTML(c)).join('') + '</div>' +
     (capasBlock ? '' : '<div id="derivado">' + derivadoLaserHTML() + '</div>') + '</div></div>' +
 
     capasBlock +
 
     '<div class="sec"><div class="sec__hd"><span class="sec__t">Tiempos</span></div>' +
-    '<div class="panel"><div class="fields">' + tiempos.map(campoHTML).join('') + '</div></div></div>' +
+    '<div class="panel"><div class="fields">' + tiempos.map(c => campoHTML(c)).join('') + '</div></div></div>' +
+
+    procesosSecHTML() +
 
     '<div class="sec"><div class="sec__hd"><span class="sec__t">Utilidad</span>' +
     (state.cot.utilidadOverride !== null && state.cot.utilidadOverride !== undefined ? '<button class="linkbtn" data-action="reset-utilidad">Restablecer</button>' : '') +
@@ -1608,25 +1832,31 @@ function actualizarVivo(sinFlash) {
   if (mp) mp.innerHTML = mercadoHTML(res);
   const der = document.getElementById('derivado');
   if (der) der.innerHTML = derivadoLaserHTML();
+  procesosExtra().forEach((_, k) => {
+    const d = document.querySelector('[data-derivado="' + k + '"]');
+    if (d) d.innerHTML = derivadoLaserHTML(k);
+  });
   const tier = document.getElementById('tierLbl');
   if (tier) tier.textContent = res.rango.etiqueta + (res.descuentoPct > 0 ? ' · −' + Math.round(res.descuentoPct * 100) + '%' : '');
 }
 
 /* Refresca la meta de override de un campo sin tocar su input (conserva el foco). */
-function refrescarMetaCampo(id) {
-  const campos = camposFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+function refrescarMetaCampo(id, k) {
+  if (k === undefined) k = null;
+  const pr = procDe(k);
+  const campos = camposFormulario(pr.tecnica, pr.producto, pr.inputs);
   const c = campos.find(x => x.id === id);
   if (!c || !c.configPath) return;
-  const wrap = document.querySelector('[data-fieldwrap="' + id + '"]');
+  const wrap = document.querySelector('[data-fieldwrap="' + claveWrap(id, k) + '"]');
   if (!wrap) return;
   const cfgVal = getPath(state.config, c.configPath);
   const f = c.factor || 1;
-  const isOv = !casiIgual(state.cot.inputs[id], cfgVal);
+  const isOv = !casiIgual(pr.inputs[id], cfgVal);
   wrap.classList.toggle('is-overridden', isOv);
   let meta = wrap.querySelector('.field__meta');
   if (!meta) { meta = document.createElement('div'); meta.className = 'field__meta'; wrap.appendChild(meta); }
   meta.innerHTML = '<span>Config: ' + formatMXN(cfgVal * f) + (f !== 1 ? ' /kg' : '') + '</span>' +
-    (isOv ? '<button class="linkbtn" data-action="reset-campo" data-id="' + id + '">Restablecer</button><span class="badge badge--i">' + ico('bolt', 13) + 'Solo esta cotización</span>' : '');
+    (isOv ? '<button class="linkbtn" data-action="reset-campo" data-id="' + id + '"' + attrProc(k) + '>Restablecer</button><span class="badge badge--i">' + ico('bolt', 13) + 'Solo esta cotización</span>' : '');
 }
 /* ============ 15. SHEET GENÉRICO ============ */
 let sheetState = { onClose: null };
@@ -1768,6 +1998,8 @@ function construirSnapshot() {
     producto: state.cot.producto, productoLabel: p ? p.label : state.cot.producto,
     cantidad: state.cot.cantidad,
     inputs: JSON.parse(JSON.stringify(state.cot.inputs)),
+    procesos: JSON.parse(JSON.stringify(procesosExtra())),
+    procesosLabel: procesosExtra().map((_, k) => etiquetaProceso(k)),
     utilidadOverride: state.cot.utilidadOverride,
     aplicaComision: comisionActiva(),
     resultado: JSON.parse(JSON.stringify(res))
@@ -1783,9 +2015,18 @@ function desgloseHTML(snap) {
   const cant = snap.cantidad;
   let h = '';
 
+  if (bd.procesos && bd.procesos.length > 1) {
+    h += '<div class="bd-group"><div class="bd-group__t">Procesos sobre la misma pieza</div>';
+    for (const p of bd.procesos) h += lineaHTML(escapeHtml(p.label), formatMXN(p.costo), 'costo directo de este proceso');
+    h += lineaHTML('El blanco se cobra una sola vez', '', '', 'bd-l--muted');
+    h += '</div>';
+  }
+
   h += '<div class="bd-group"><div class="bd-group__t">Materiales por pieza</div>';
   if (bd.materiales.lineas && bd.materiales.lineas.length) {
+    let procActual = null;
     for (const L of bd.materiales.lineas) {
+      if (L.proceso && L.proceso !== procActual) { procActual = L.proceso; h += '<div class="bd-sub">' + escapeHtml(procActual) + '</div>'; }
       const sub = (L.qty !== undefined && L.unidad) ? formatNum(L.qty, L.qty % 1 === 0 ? 0 : 2) + ' ' + L.unidad + ' × ' + formatMXN(L.unitario) + (L.override ? ' · ajustado (config ' + formatMXN(L.valorConfig) + ')' : '') : '';
       h += lineaHTML(escapeHtml(L.label), formatMXN(L.total), sub);
     }
@@ -1798,7 +2039,7 @@ function desgloseHTML(snap) {
 
   h += '<div class="bd-group"><div class="bd-group__t">Máquina por pieza</div>';
   for (const d of bd.maquina.detalle) {
-    h += lineaHTML(escapeHtml(d.nombre),
+    h += lineaHTML(escapeHtml(d.nombre) + (d.proceso ? ' <small style="opacity:.7">· ' + escapeHtml(d.proceso) + '</small>' : ''),
       formatMXN(d.subtotal),
       formatNum(d.horas * 60, 1) + ' min × ' + formatMXN(d.costoHora) + '/h · dep ' + formatMXN(d.dep) + ' + mant ' + formatMXN(d.mant) + ' + luz ' + formatMXN(d.luz));
   }
@@ -1830,11 +2071,19 @@ function desgloseHTML(snap) {
   return h;
 }
 
+/* Todas las técnicas que lleva la pieza, para el cliente (sin costos). */
+function tecnicasSnapshot(snap) {
+  const bd = snap.resultado && snap.resultado.breakdown;
+  if (bd && bd.procesos && bd.procesos.length > 1) return bd.procesos.map(p => p.label);
+  if (Array.isArray(snap.procesosLabel) && snap.procesosLabel.length) return [snap.tecnicaLabel].concat(snap.procesosLabel);
+  return [snap.tecnicaLabel];
+}
+
 function construirTextoWhatsApp(snap) {
   const res = snap.resultado;
   const L = [];
   L.push('*Cotización — ' + snap.productoLabel + '*');
-  L.push(snap.tecnicaLabel + ' · ' + snap.cantidad + ' pza' + (snap.cantidad > 1 ? 's' : ''));
+  L.push(tecnicasSnapshot(snap).join(' + ') + ' · ' + snap.cantidad + ' pza' + (snap.cantidad > 1 ? 's' : ''));
   L.push('');
   L.push('Precio por pieza: *' + formatMXN(res.precioFinal) + '*');
   L.push('Total del pedido: *' + formatMXN(res.totalPedido) + '*');
@@ -1888,7 +2137,7 @@ function cotizacionPDFHTML(snap) {
     '<thead><tr>' +
     '<th>Concepto</th><th class="num">Cantidad</th><th class="num">Precio unitario</th><th class="num">Importe</th>' +
     '</tr></thead><tbody><tr>' +
-    '<td class="pd__desc"><b>' + escapeHtml(snap.productoLabel) + '</b><small>' + escapeHtml(snap.tecnicaLabel) + ' · personalizado</small></td>' +
+    '<td class="pd__desc"><b>' + escapeHtml(snap.productoLabel) + '</b><small>' + escapeHtml(tecnicasSnapshot(snap).join(' + ')) + ' · personalizado</small></td>' +
     '<td class="num">' + snap.cantidad + '</td>' +
     '<td class="num">' + formatMXN(res.precioFinal) + '</td>' +
     '<td class="num">' + formatMXN(res.totalPedido) + '</td>' +
@@ -2136,7 +2385,7 @@ function renderHistorial() {
       h += '<div class="card">' +
         '<div class="card__hd"><div style="min-width:0">' +
         '<div class="card__t">' + escapeHtml(s.cliente || s.productoLabel) + '</div>' +
-        '<div class="card__sub">' + escapeHtml(s.tecnicaLabel) + ' · ' + escapeHtml(s.productoLabel) + ' · ' + s.cantidad + ' pza' + (s.cantidad > 1 ? 's' : '') + '</div>' +
+        '<div class="card__sub">' + escapeHtml(tecnicasSnapshot(s).join(' + ')) + ' · ' + escapeHtml(s.productoLabel) + ' · ' + s.cantidad + ' pza' + (s.cantidad > 1 ? 's' : '') + '</div>' +
         '<div class="card__sub">' + formatFecha(s.fecha) + '</div>' +
         '</div><div class="card__p">' + formatMXN(r.precioFinal) + '<small>' + formatMXN(r.totalPedido) + ' total</small></div></div>' +
         '<div class="card__acts">' +
@@ -2165,6 +2414,14 @@ function duplicarSnapshot(id) {
   state.cot.producto = s.producto;
   state.cot.cantidad = Math.max(1, s.cantidad || 1);
   state.cot.inputs = defaultsFormulario(s.tecnica, s.producto, s.inputs || {});
+  state.cot.procesos = (Array.isArray(s.procesos) ? s.procesos : [])
+    .filter(p => p && p.tecnica && PRODUCTOS[p.tecnica])
+    .map(p => {
+      const producto = buscarProducto(p.tecnica, p.producto) ? p.producto : productoParaProceso(p.tecnica, s.producto);
+      const inputs = defaultsFormulario(p.tecnica, producto, p.inputs || {});
+      inputs.costoBlanco = 0;
+      return { tecnica: p.tecnica, producto, inputs };
+    });
   state.cot.utilidadOverride = (s.utilidadOverride === undefined) ? null : s.utilidadOverride;
   state.cot.aplicaComision = (s.aplicaComision === undefined) ? null : s.aplicaComision;
   cambiarTab('cotizar');
@@ -2243,17 +2500,22 @@ function irTab(id) {
 /* ============ 22. CAMBIO DE TÉCNICA / PRODUCTO ============ */
 function claveUltimos(t, p) { return t + '_' + p; }
 function recordarUltimos() {
-  state.ultimos[claveUltimos(state.cot.tecnica, state.cot.producto)] = Object.assign({ __cant: state.cot.cantidad }, state.cot.inputs);
+  state.ultimos[claveUltimos(state.cot.tecnica, state.cot.producto)] = Object.assign(
+    { __cant: state.cot.cantidad, __procesos: JSON.parse(JSON.stringify(procesosExtra())) },
+    state.cot.inputs);
   guardarUltimosStorage(state.ultimos);
 }
 function cargarCombinacion(tecnica, producto) {
   const prev = state.ultimos[claveUltimos(tecnica, producto)] || {};
   const cant = prev.__cant;
-  const limpio = Object.assign({}, prev); delete limpio.__cant;
+  const procs = prev.__procesos;
+  const limpio = Object.assign({}, prev); delete limpio.__cant; delete limpio.__procesos;
   state.cot.tecnica = tecnica;
   state.cot.producto = producto;
   state.cot.inputs = defaultsFormulario(tecnica, producto, limpio);
+  if (Array.isArray(procs)) state.cot.procesos = procs.filter(p => p && p.tecnica && PRODUCTOS[p.tecnica]);
   if (cant) state.cot.cantidad = Math.max(1, parseInt(cant, 10) || 1);
+  reajustarProcesos();
   renderCotizar();
 }
 
@@ -2275,47 +2537,51 @@ function onInput(e) {
   if (el.id === 'q-hist') { state.filtroHistorial = el.value; renderHistorial(); const i = document.getElementById('q-hist'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } return; }
 
   if (el.dataset.capaNombre !== undefined) {
+    const k = procK(el), pr = procDe(k);
     const i = Number(el.dataset.capaNombre);
-    const capa = (state.cot.inputs.capas || [])[i];
+    const capa = (pr.inputs.capas || [])[i];
     if (!capa) return;
     capa.nombre = el.value;
     actualizarVivo(); recordarUltimos(); return;
   }
   if (el.dataset.capaField) {
+    const k = procK(el), pr = procDe(k);
     const i = Number(el.dataset.i), key = el.dataset.capaField, tipo = el.dataset.type;
-    const capa = (state.cot.inputs.capas || [])[i];
+    const capa = (pr.inputs.capas || [])[i];
     if (!capa) return;
     const factor = Number(el.dataset.factor) || 1;
     const crudo = el.value === '' ? '' : (tipo === 'int' ? (parseInt(el.value, 10) || 0) : (parseFloat(el.value) || 0));
     capa[key] = crudo === '' ? '' : (factor !== 1 ? crudo / factor : crudo);
-    refrescarMetaCapa(i, key);
+    refrescarMetaCapa(i, key, k);
     actualizarVivo(); recordarUltimos(); return;
   }
 
   if (el.dataset.field) {
+    const k = procK(el), pr = procDe(k);
     const id = el.dataset.field, tipo = el.dataset.type;
     // Selects que cambian QUÉ campos se muestran: hay que reconstruir el formulario.
     const MODOS = ['hojaModo', 'vinilModo', 'materialModo', 'filamentoModo'];
     if (tipo === 'select' && MODOS.indexOf(id) !== -1) {
-      state.cot.inputs[id] = el.value;
-      state.cot.inputs = defaultsFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+      pr.inputs[id] = el.value;
+      pr.inputs = defaultsFormulario(pr.tecnica, pr.producto, pr.inputs);
+      if (k === null) state.cot.inputs = pr.inputs; else { procesosExtra()[k].inputs = pr.inputs; pr.inputs.costoBlanco = 0; }
       renderCotizar(); recordarUltimos(); return;
     }
     if (tipo === 'select') {
-      state.cot.inputs[id] = el.value;
+      pr.inputs[id] = el.value;
       if (id === 'tipoFilamento') {
         // El costo por gramo depende del filamento: cada color vuelve al default del nuevo material.
         const cfg = el.value === 'PLA' ? 'catalogoInsumos.impresion3d.costoPorGramoPLA' : 'catalogoInsumos.impresion3d.costoPorGramoPETG';
         const nuevo = getPath(state.config, cfg);
-        (state.cot.inputs.capas || []).forEach(c => { c.costoPorGramo = nuevo; });
+        (pr.inputs.capas || []).forEach(c => { c.costoPorGramo = nuevo; });
         renderCotizar(); recordarUltimos(); return;
       }
     } else {
       const factor = Number(el.dataset.factor) || 1;
       const crudo = el.value === '' ? '' : (tipo === 'int' ? (parseInt(el.value, 10) || 0) : (parseFloat(el.value) || 0));
-      state.cot.inputs[id] = crudo === '' ? '' : (factor !== 1 ? crudo / factor : crudo);
+      pr.inputs[id] = crudo === '' ? '' : (factor !== 1 ? crudo / factor : crudo);
     }
-    refrescarMetaCampo(id);
+    refrescarMetaCampo(id, k);
     actualizarVivo(); recordarUltimos(); return;
   }
 
@@ -2384,32 +2650,54 @@ function onClick(e) {
     actualizarVivo(); recordarUltimos(); return;
   }
   if (a === 'reset-campo') {
-    const campos = camposFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+    const k = procK(b), pr = procDe(k);
+    const campos = camposFormulario(pr.tecnica, pr.producto, pr.inputs);
     const c = campos.find(x => x.id === b.dataset.id);
     if (!c) return;
-    state.cot.inputs[c.id] = getPath(state.config, c.configPath);
-    const inp = document.getElementById('f-' + c.id); if (inp) inp.value = state.cot.inputs[c.id] * (c.factor || 1);
-    refrescarMetaCampo(c.id); actualizarVivo(); recordarUltimos(); return;
+    pr.inputs[c.id] = getPath(state.config, c.configPath);
+    const inp = document.getElementById(idCampo(c.id, k)); if (inp) inp.value = pr.inputs[c.id] * (c.factor || 1);
+    refrescarMetaCampo(c.id, k); actualizarVivo(); recordarUltimos(); return;
   }
   if (a === 'capa-add') {
-    const esp = especCapas(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+    const k = procK(b), pr = procDe(k);
+    const esp = especCapas(pr.tecnica, pr.producto, pr.inputs);
     if (!esp) return;
-    const arr = (state.cot.inputs.capas || []).slice();
+    const arr = (pr.inputs.capas || []).slice();
     if (arr.length >= MAX_CAPAS) { showToast('Máximo ' + MAX_CAPAS + ' ' + esp.plural, 'error'); return; }
     arr.push(capaNueva(esp));
-    state.cot.inputs.capas = arr;
-    state.cot.inputs = defaultsFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+    pr.inputs.capas = arr;
+    const rehecho = defaultsFormulario(pr.tecnica, pr.producto, pr.inputs);
+    if (k === null) state.cot.inputs = rehecho; else { rehecho.costoBlanco = 0; procesosExtra()[k].inputs = rehecho; }
     renderCotizar(); recordarUltimos();
-    const nuevo = document.querySelector('[data-capa-nombre="' + (arr.length - 1) + '"]');
+    const nuevo = document.querySelector('[data-capa-nombre="' + (arr.length - 1) + '"]' + (k === null ? ':not([data-proc])' : '[data-proc="' + k + '"]'));
     if (nuevo) nuevo.focus();
     return;
   }
   if (a === 'capa-del') {
-    const arr = (state.cot.inputs.capas || []).slice();
+    const k = procK(b), pr = procDe(k);
+    const arr = (pr.inputs.capas || []).slice();
     if (arr.length <= 1) return;
     arr.splice(Number(b.dataset.i), 1);
-    state.cot.inputs.capas = arr;
-    state.cot.inputs = defaultsFormulario(state.cot.tecnica, state.cot.producto, state.cot.inputs);
+    pr.inputs.capas = arr;
+    const rehecho = defaultsFormulario(pr.tecnica, pr.producto, pr.inputs);
+    if (k === null) state.cot.inputs = rehecho; else { rehecho.costoBlanco = 0; procesosExtra()[k].inputs = rehecho; }
+    renderCotizar(); recordarUltimos(); return;
+  }
+  if (a === 'proceso-add') {
+    const extra = procesosExtra();
+    if (extra.length >= MAX_PROCESOS) { showToast('Máximo ' + MAX_PROCESOS + ' procesos extra', 'error'); return; }
+    const t = b.dataset.id;
+    if (!PRODUCTOS[t]) return;
+    const prod = productoParaProceso(t, state.cot.producto);
+    const previos = Object.assign({}, state.ultimos[claveUltimos(t, prod)] || {});
+    delete previos.__cant;
+    extra.push(procesoNuevo(t, previos));
+    renderCotizar(); recordarUltimos();
+    showToast(buscarTecnica(t).label + ' agregado a la misma pieza');
+    return;
+  }
+  if (a === 'proceso-del') {
+    procesosExtra().splice(Number(b.dataset.proc), 1);
     renderCotizar(); recordarUltimos(); return;
   }
   if (a === 'reset-utilidad') { state.cot.utilidadOverride = null; renderCotizar(); return; }
